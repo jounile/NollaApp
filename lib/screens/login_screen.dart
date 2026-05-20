@@ -46,7 +46,10 @@ class _LoginScreenState extends State<LoginScreen> {
     if (result.success) {
       Navigator.of(context).pushReplacement(
         MaterialPageRoute<void>(
-          builder: (_) => MainScreen(username: _usernameController.text.trim()),
+          builder: (_) => MainScreen(
+            username: _usernameController.text.trim(),
+            authToken: result.token ?? '',
+          ),
         ),
       );
     } else {

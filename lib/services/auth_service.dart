@@ -4,8 +4,9 @@ import 'package:http/http.dart' as http;
 class AuthResult {
   final bool success;
   final String message;
+  final String? token;
 
-  const AuthResult({required this.success, required this.message});
+  const AuthResult({required this.success, required this.message, this.token});
 }
 
 class AuthService {
@@ -22,7 +23,8 @@ class AuthService {
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         final message = data['message'] as String? ?? 'Login successful';
-        return AuthResult(success: true, message: message);
+        final token = data['token'] as String?;
+        return AuthResult(success: true, message: message, token: token);
       } else {
         final data = jsonDecode(response.body) as Map<String, dynamic>? ?? {};
         final message = data['message'] as String? ?? 'Invalid credentials';
