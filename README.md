@@ -1,2 +1,2 @@
-# NollaMobile
-NollaMobile community app
+# NollaApp
+Nolla.net mobile application
