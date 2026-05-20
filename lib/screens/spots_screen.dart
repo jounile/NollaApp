@@ -68,7 +68,7 @@ class _SpotsScreenState extends State<SpotsScreen> {
 
     try {
       final position = await Geolocator.getCurrentPosition(
-        locationSettings: const LocationSettings(accuracy: LocationAccuracy.high),
+        desiredAccuracy: LocationAccuracy.high,
       ).timeout(const Duration(seconds: 15));
 
       if (!mounted) return;
