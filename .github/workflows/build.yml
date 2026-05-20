@@ -56,6 +56,11 @@ jobs:
       - name: Get dependencies
         run: flutter pub get
 
+      - name: Regenerate Xcode project
+        run: |
+          rm -f ios/Runner.xcodeproj/project.pbxproj
+          flutter create --platforms=ios --org com.example --project-name nolla_app .
+
       - name: Build iOS simulator
         run: flutter build ios --simulator --debug
 
