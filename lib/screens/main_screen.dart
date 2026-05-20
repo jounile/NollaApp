@@ -6,8 +6,9 @@ import 'login_screen.dart';
 
 class MainScreen extends StatefulWidget {
   final String username;
+  final String authToken;
 
-  const MainScreen({super.key, required this.username});
+  const MainScreen({super.key, required this.username, required this.authToken});
 
   @override
   State<MainScreen> createState() => _MainScreenState();
@@ -19,7 +20,7 @@ class _MainScreenState extends State<MainScreen> {
   late final List<Widget> _pages = [
     HomeScreen(username: widget.username),
     const SpotsScreen(),
-    const MediaScreen(),
+    MediaScreen(authToken: widget.authToken),
   ];
 
   void _onItemTapped(int index) {

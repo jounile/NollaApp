@@ -1,9 +1,24 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import '../services/media_service.dart';
+
+enum UploadStatus { pending, uploading, uploaded, failed }
+
+class _MediaItem {
+  final XFile file;
+  final bool isVideo;
+  UploadStatus uploadStatus;
+  String? uploadedUrl;
+
+  _MediaItem({required this.file, required this.isVideo})
+      : uploadStatus = UploadStatus.pending;
+}
 
 class MediaScreen extends StatefulWidget {
-  const MediaScreen({super.key});
+  final String authToken;
+
+  const MediaScreen({super.key, required this.authToken});
 
   @override
   State<MediaScreen> createState() => _MediaScreenState();
@@ -11,7 +26,9 @@ class MediaScreen extends StatefulWidget {
 
 class _MediaScreenState extends State<MediaScreen> {
   final ImagePicker _picker = ImagePicker();
+  final MediaService _mediaService = MediaService();
   final List<_MediaItem> _mediaItems = [];
+  bool _isUploading = false;
 
   Future<void> _pickImage(ImageSource source) async {
     try {
@@ -42,6 +59,37 @@ class _MediaScreenState extends State<MediaScreen> {
       if (!mounted) return;
       _showError('Could not pick video. Please check permissions.');
     }
+  }
+
+  Future<void> _uploadAll() async {
+    if (_isUploading) return;
+    setState(() => _isUploading = true);
+
+    final pending = _mediaItems
+        .where((i) =>
+            i.uploadStatus == UploadStatus.pending ||
+            i.uploadStatus == UploadStatus.failed)
+        .toList();
+
+    for (final item in pending) {
+      setState(() => item.uploadStatus = UploadStatus.uploading);
+      final result = await _mediaService.uploadFile(
+        item.file,
+        item.isVideo,
+        widget.authToken,
+      );
+      if (!mounted) return;
+      setState(() {
+        if (result.success) {
+          item.uploadStatus = UploadStatus.uploaded;
+          item.uploadedUrl = result.url;
+        } else {
+          item.uploadStatus = UploadStatus.failed;
+        }
+      });
+    }
+
+    if (mounted) setState(() => _isUploading = false);
   }
 
   void _showError(String message) {
@@ -126,22 +174,29 @@ class _MediaScreenState extends State<MediaScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final hasPending = _mediaItems.any((i) =>
+        i.uploadStatus == UploadStatus.pending ||
+        i.uploadStatus == UploadStatus.failed);
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Media'),
         actions: [
           if (_mediaItems.isNotEmpty)
-            TextButton.icon(
-              onPressed: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Upload feature coming soon!')),
-                );
-              },
-              icon: const Icon(Icons.cloud_upload_outlined),
-              label: const Text('Upload'),
-            ),
+            _isUploading
+                ? const Padding(
+                    padding: EdgeInsets.all(14),
+                    child: SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    ),
+                  )
+                : TextButton.icon(
+                    onPressed: hasPending ? _uploadAll : null,
+                    icon: const Icon(Icons.cloud_upload_outlined),
+                    label: const Text('Upload'),
+                  ),
         ],
       ),
       body: _mediaItems.isEmpty
@@ -158,7 +213,9 @@ class _MediaScreenState extends State<MediaScreen> {
                 final item = _mediaItems[index];
                 return _MediaTile(
                   item: item,
-                  onDelete: () => _removeItem(index),
+                  onDelete: item.uploadStatus == UploadStatus.uploading
+                      ? null
+                      : () => _removeItem(index),
                 );
               },
             ),
@@ -171,16 +228,9 @@ class _MediaScreenState extends State<MediaScreen> {
   }
 }
 
-class _MediaItem {
-  final XFile file;
-  final bool isVideo;
-
-  const _MediaItem({required this.file, required this.isVideo});
-}
-
 class _MediaTile extends StatelessWidget {
   final _MediaItem item;
-  final VoidCallback onDelete;
+  final VoidCallback? onDelete;
 
   const _MediaTile({required this.item, required this.onDelete});
 
@@ -210,22 +260,64 @@ class _MediaTile extends StatelessWidget {
             left: 4,
             child: Icon(Icons.videocam, color: Colors.white, size: 16),
           ),
-        Positioned(
-          top: 2,
-          right: 2,
-          child: GestureDetector(
-            onTap: onDelete,
+        if (item.uploadStatus == UploadStatus.uploading)
+          ClipRRect(
+            borderRadius: BorderRadius.circular(4),
             child: Container(
-              width: 24,
-              height: 24,
-              decoration: const BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.black54,
+              color: Colors.black45,
+              child: const Center(
+                child: CircularProgressIndicator(
+                  color: Colors.white,
+                  strokeWidth: 2,
+                ),
               ),
-              child: const Icon(Icons.close, color: Colors.white, size: 14),
             ),
           ),
-        ),
+        if (item.uploadStatus == UploadStatus.uploaded)
+          Positioned(
+            bottom: 4,
+            right: 4,
+            child: Container(
+              width: 20,
+              height: 20,
+              decoration: const BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.green,
+              ),
+              child: const Icon(Icons.check, color: Colors.white, size: 14),
+            ),
+          ),
+        if (item.uploadStatus == UploadStatus.failed)
+          Positioned(
+            bottom: 4,
+            right: 4,
+            child: Container(
+              width: 20,
+              height: 20,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.red[700],
+              ),
+              child: const Icon(Icons.refresh, color: Colors.white, size: 14),
+            ),
+          ),
+        if (onDelete != null)
+          Positioned(
+            top: 2,
+            right: 2,
+            child: GestureDetector(
+              onTap: onDelete,
+              child: Container(
+                width: 24,
+                height: 24,
+                decoration: const BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.black54,
+                ),
+                child: const Icon(Icons.close, color: Colors.white, size: 14),
+              ),
+            ),
+          ),
       ],
     );
   }
