@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
 
 void main() {
-  runApp(const NollaMobileApp());
+  runApp(const NollaApp());
 }
 
-class NollaMobileApp extends StatelessWidget {
-  const NollaMobileApp({super.key});
+class NollaApp extends StatelessWidget {
+  const NollaApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'NollaMobile',
+      title: 'NollaApp',
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
         useMaterial3: true,
@@ -27,11 +27,11 @@ class HomePage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('NollaMobile'),
+        title: const Text('NollaApp'),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
       ),
       body: const Center(
-        child: Text('Welcome to NollaMobile'),
+        child: Text('Welcome to NollaApp'),
       ),
     );
   }
