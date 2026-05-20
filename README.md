@@ -50,10 +50,31 @@ flutter run                # Flutter picks the booted simulator
    flutter run -d <device-id>
    ```
 
+### On a mobile browser (GitHub Pages)
+
+Every push to `main` automatically builds the web version and deploys it to GitHub Pages. No installation needed — open the URL in any mobile browser:
+
+```
+https://jounile.github.io/NollaApp/
+```
+
+Works on both Android (Chrome, Firefox) and iPhone (Safari, Chrome). The page is the same Flutter app compiled to WebAssembly/JavaScript.
+
+**First-time setup (repo owner only):**
+Go to **Settings → Pages → Source** and select **GitHub Actions**.
+After the first successful CI run the URL becomes live.
+
 ### Useful commands
 
 ```bash
 flutter devices                            # list connected devices
 flutter emulators                          # list available emulators
 flutter emulators --launch <emulator-id>   # launch a specific emulator
+```
+
+### Build web locally
+
+```bash
+flutter build web --release --base-href /NollaApp/
+# Output is in build/web/ — open build/web/index.html in a browser
 ```
