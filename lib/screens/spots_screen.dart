@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:geolocator/geolocator.dart';
+import '../models/spot.dart';
+import '../services/spot_service.dart';
 
 class SpotsScreen extends StatefulWidget {
   const SpotsScreen({super.key});
@@ -82,11 +84,7 @@ class _SpotsScreenState extends State<SpotsScreen> {
   void _applyFallback(String message) {
     setState(() {
       _userLocation = _defaultLocation;
-      _isLoading = false;
-      _spots.clear();
-      _spots.addAll(_generateNearbySpots(_defaultLocation));
     });
-    _mapController.move(_defaultLocation, 14);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
@@ -94,20 +92,42 @@ class _SpotsScreenState extends State<SpotsScreen> {
         action: SnackBarAction(label: 'Retry', onPressed: _determinePosition),
       ),
     );
+    _loadSpots(_defaultLocation);
   }
 
   void _applyPosition(Position position) {
     final userLatLng = LatLng(position.latitude, position.longitude);
     setState(() {
       _userLocation = userLatLng;
-      _isLoading = false;
-      _spots.clear();
-      _spots.addAll(_generateNearbySpots(userLatLng));
     });
-    _mapController.move(userLatLng, 14);
+    _loadSpots(userLatLng);
   }
 
-  List<_Spot> _generateNearbySpots(LatLng center) {
+  Future<void> _loadSpots(LatLng center) async {
+    final fetched = await SpotService.fetchSpots(
+      latitude: center.latitude,
+      longitude: center.longitude,
+    );
+    if (!mounted) return;
+    setState(() {
+      _spots.clear();
+      if (fetched.isNotEmpty) {
+        _spots.addAll(fetched.map((s) => _Spot(
+              name: s.name,
+              latLng: LatLng(s.latitude, s.longitude),
+              icon: _spotTypeToIcon(s.type),
+            )));
+      } else {
+        _spots.addAll(_fallbackSpots(center));
+      }
+      _isLoading = false;
+    });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _mapController.move(center, 14);
+    });
+  }
+
+  List<_Spot> _fallbackSpots(LatLng center) {
     return [
       _Spot(
         name: 'Spot Alpha',
@@ -286,6 +306,19 @@ class _SpotsScreenState extends State<SpotsScreen> {
               ],
             ),
     );
+  }
+}
+
+IconData _spotTypeToIcon(String type) {
+  switch (type) {
+    case 'terrain':
+      return Icons.terrain;
+    case 'water':
+      return Icons.water;
+    case 'park':
+      return Icons.park;
+    default:
+      return Icons.place;
   }
 }
 
