@@ -1,3 +1,6 @@
+import 'dart:async';
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
@@ -66,21 +69,28 @@ class _SpotsScreenState extends State<SpotsScreen> {
 
     try {
       final position = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high,
+        locationSettings: Platform.isAndroid
+            ? AndroidSettings(
+                accuracy: LocationAccuracy.high,
+                timeLimit: const Duration(seconds: 15),
+              )
+            : const LocationSettings(accuracy: LocationAccuracy.high),
       );
 
       if (!mounted) return;
-
-      final userLatLng = LatLng(position.latitude, position.longitude);
-
-      setState(() {
-        _userLocation = userLatLng;
-        _isLoading = false;
-        _spots.clear();
-        _spots.addAll(_generateNearbySpots(userLatLng));
-      });
-
-      _mapController.move(userLatLng, 14);
+      _applyPosition(position);
+    } on TimeoutException {
+      // GPS couldn't get a fix in time — use last known position as fallback
+      final last = await Geolocator.getLastKnownPosition();
+      if (!mounted) return;
+      if (last != null) {
+        _applyPosition(last);
+      } else {
+        setState(() {
+          _isLoading = false;
+          _errorMessage = 'Could not get location. Move to an open area and try again.';
+        });
+      }
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -88,6 +98,17 @@ class _SpotsScreenState extends State<SpotsScreen> {
         _errorMessage = 'Could not get location. Please try again.';
       });
     }
+  }
+
+  void _applyPosition(Position position) {
+    final userLatLng = LatLng(position.latitude, position.longitude);
+    setState(() {
+      _userLocation = userLatLng;
+      _isLoading = false;
+      _spots.clear();
+      _spots.addAll(_generateNearbySpots(userLatLng));
+    });
+    _mapController.move(userLatLng, 14);
   }
 
   List<_Spot> _generateNearbySpots(LatLng center) {
