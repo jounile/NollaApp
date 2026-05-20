@@ -1,4 +1,4 @@
-package com.example.nolla_mobile
+package com.example.nolla_app
 
 import io.flutter.embedding.android.FlutterActivity
 
