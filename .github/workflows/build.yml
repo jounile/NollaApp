@@ -61,8 +61,14 @@ jobs:
 
       - name: Archive iOS simulator build
         run: |
+          APP=$(find build/ios -name "Runner.app" -type d | head -1)
+          if [ -z "$APP" ]; then
+            echo "Runner.app not found. Build tree:"; find build -type d | head -30
+            exit 1
+          fi
+          echo "Archiving: $APP"
           mkdir -p output
-          cp -r build/ios/iphonesimulator/Runner.app output/
+          cp -r "$APP" output/Runner.app
           cd output && zip -r ../nolla-app-ios-simulator.zip Runner.app
 
       - name: Upload iOS build
