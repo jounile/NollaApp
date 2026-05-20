@@ -4,7 +4,7 @@ const TEMP = 'flutter-temp-cache';
 const CACHE_NAME = 'flutter-app-cache';
 
 const RESOURCES = {"assets/shaders/ink_sparkle.frag": "ecc85a2e95f5e9f53123dcaf8cb9b6ce",
-"assets/fonts/MaterialIcons-Regular.otf": "780e27fe88c0d34f5153cfc0f7f18560",
+"assets/fonts/MaterialIcons-Regular.otf": "7df42b97ef30d6130a38b5bfc355dbdb",
 "assets/AssetManifest.bin": "a53491ba33870e68dce7c820b0867cda",
 "assets/FontManifest.json": "dc3d03800ccca4601324923c0b1d6d57",
 "assets/AssetManifest.bin.json": "bb5daa477ab092a8c1a34a960dc05d3a",
@@ -31,9 +31,9 @@ const RESOURCES = {"assets/shaders/ink_sparkle.frag": "ecc85a2e95f5e9f53123dcaf8
 "canvaskit/skwasm.worker.js": "bfb704a6c714a75da9ef320991e88b03",
 "canvaskit/canvaskit.js": "738255d00768497e86aa4ca510cce1e1",
 "canvaskit/skwasm.wasm": "4051bfc27ba29bf420d17aa0c3a98bce",
-"flutter_bootstrap.js": "03210439604899ca2c8d9f73f2b6ba5a",
+"flutter_bootstrap.js": "1bea44452f1c1515a25125820619a86d",
 "manifest.json": "431eaa3225ccc686218bccf93eb161d0",
-"main.dart.js": "4cab928d0054834af8cad480dcdf640f"};
+"main.dart.js": "05b3ce81a1bd7d5b47616c7ec13b954e"};
 // The application shell files that are downloaded before a service worker can
 // start.
 const CORE = ["main.dart.js",
