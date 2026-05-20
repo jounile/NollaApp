@@ -85,7 +85,6 @@ class _SpotsScreenState extends State<SpotsScreen> {
     setState(() {
       _userLocation = _defaultLocation;
     });
-    _mapController.move(_defaultLocation, 14);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
@@ -101,7 +100,6 @@ class _SpotsScreenState extends State<SpotsScreen> {
     setState(() {
       _userLocation = userLatLng;
     });
-    _mapController.move(userLatLng, 14);
     _loadSpots(userLatLng);
   }
 
@@ -123,6 +121,9 @@ class _SpotsScreenState extends State<SpotsScreen> {
         _spots.addAll(_fallbackSpots(center));
       }
       _isLoading = false;
+    });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _mapController.move(center, 14);
     });
   }
 
