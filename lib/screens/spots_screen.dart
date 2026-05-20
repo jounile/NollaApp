@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
@@ -69,13 +68,8 @@ class _SpotsScreenState extends State<SpotsScreen> {
 
     try {
       final position = await Geolocator.getCurrentPosition(
-        locationSettings: !kIsWeb && defaultTargetPlatform == TargetPlatform.android
-            ? AndroidSettings(
-                accuracy: LocationAccuracy.high,
-                timeLimit: const Duration(seconds: 15),
-              )
-            : const LocationSettings(accuracy: LocationAccuracy.high),
-      );
+        locationSettings: const LocationSettings(accuracy: LocationAccuracy.high),
+      ).timeout(const Duration(seconds: 15));
 
       if (!mounted) return;
       _applyPosition(position);
