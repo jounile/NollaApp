@@ -56,6 +56,9 @@ jobs:
       - name: Get dependencies
         run: flutter pub get
 
+      - name: Enable web support
+        run: flutter create --platforms=web --org com.example --project-name nolla_app .
+
       - name: Build web
         run: flutter build web --release --base-href /NollaApp/
 
