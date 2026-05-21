@@ -40,13 +40,14 @@ class MediaService {
         ),
       );
 
-      // MultipartRequest.headers returns a computed copy, so mutations are
-      // discarded. Build headers explicitly using multipart.boundary instead.
+      // multipart.headers returns a computed copy in http ^1.2.x (boundary is
+      // private), so mutations are discarded. Read Content-Type from the copy,
+      // build our own headers map with Authorization, and drop content-length so
+      // http.post() recomputes it from the actual body byte count.
+      final headers = Map<String, String>.from(multipart.headers)
+        ..remove('content-length')
+        ..['Authorization'] = 'Bearer $authToken';
       final body = await multipart.finalize().toBytes();
-      final headers = <String, String>{
-        'Content-Type': 'multipart/form-data; boundary=${multipart.boundary}',
-        'Authorization': 'Bearer $authToken',
-      };
 
       final response = await http
           .post(Uri.parse(_uploadUrl), headers: headers, body: body)
