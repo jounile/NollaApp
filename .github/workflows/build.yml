@@ -177,6 +177,114 @@ jobs:
               });
             }
 
+  test-login:
+    name: Login Browser Test
+    runs-on: ubuntu-latest
+    needs: build-web
+    if: github.event_name == 'pull_request' && github.event.action != 'closed'
+    permissions:
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Playwright
+        run: |
+          npm init -y
+          npm install --save-dev @playwright/test
+          npx playwright install chromium --with-deps
+        working-directory: e2e
+
+      - name: Wait for GitHub Pages deployment
+        run: |
+          URL="https://jounile.github.io/NollaApp/pr-${{ github.event.pull_request.number }}/"
+          echo "Polling: $URL"
+          for i in $(seq 1 30); do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$URL")
+            echo "Attempt $i: HTTP $STATUS"
+            if [ "$STATUS" = "200" ]; then
+              echo "Page is live!"
+              exit 0
+            fi
+            sleep 10
+          done
+          echo "Timed out after 5 minutes waiting for GitHub Pages"
+          exit 1
+
+      - name: Run login test
+        id: run_test
+        run: |
+          if npx playwright test login.test.js --config playwright.config.js 2>&1 | tee test-output.txt; then
+            echo "result=passed" >> $GITHUB_OUTPUT
+          else
+            echo "result=failed" >> $GITHUB_OUTPUT
+          fi
+        working-directory: e2e
+        env:
+          BASE_URL: https://jounile.github.io/NollaApp/pr-${{ github.event.pull_request.number }}/
+
+      - name: Upload screenshots and test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: login-test-results
+          path: e2e/test-results/
+          if-no-files-found: ignore
+          retention-days: 7
+
+      - name: Comment login test result on PR
+        if: always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const prNumber = context.payload.pull_request.number;
+            const previewUrl = `https://jounile.github.io/NollaApp/pr-${prNumber}/`;
+            const runUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+
+            let output = '';
+            try { output = fs.readFileSync('e2e/test-output.txt', 'utf8'); } catch (_) {}
+            const passed = output.includes('1 passed');
+            const icon = passed ? '✅' : '❌';
+            const status = passed ? 'Passed' : 'Failed';
+            const detail = passed
+              ? 'Login with `testaaja1` / `testaaja1` succeeded and navigated to the main screen.'
+              : `Login test failed — see [screenshots and logs](${runUrl}).`;
+
+            const body = `### Login Browser Test\n\n${icon} **${status}**\n\n${detail}\n\n[Open preview](${previewUrl})`;
+
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+            });
+
+            const existing = comments.find(c => c.body.includes('### Login Browser Test'));
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: prNumber,
+                body,
+              });
+            }
+
+      - name: Fail if login test failed
+        if: steps.run_test.outputs.result == 'failed'
+        run: |
+          cat e2e/test-output.txt
+          exit 1
+
   cleanup-pr-preview:
     name: Clean up PR preview
     runs-on: ubuntu-latest
