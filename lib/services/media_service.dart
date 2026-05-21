@@ -15,7 +15,7 @@ class UploadResult {
 }
 
 class MediaService {
-  static const String _uploadUrl = 'https://nolla.net/media/api/upload';
+  static const String _uploadUrl = 'https://nolla.net/api/v1/media/upload';
 
   Future<UploadResult> uploadFile(
     XFile file,
