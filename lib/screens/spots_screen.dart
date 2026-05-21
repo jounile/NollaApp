@@ -106,7 +106,7 @@ class _SpotsScreenState extends State<SpotsScreen> {
         action: SnackBarAction(label: 'Retry', onPressed: _determinePosition),
       ),
     );
-    _loadSpots(_defaultLocation, initialLoad: true, moveMap: true);
+    _loadSpots(_defaultLocation, initialLoad: true, moveMap: true, zoom: _mapZoom);
   }
 
   void _applyPosition(Position position) {
@@ -115,7 +115,7 @@ class _SpotsScreenState extends State<SpotsScreen> {
       _userLocation = userLatLng;
       _mapCenter = userLatLng;
     });
-    _loadSpots(userLatLng, initialLoad: true, moveMap: true);
+    _loadSpots(userLatLng, initialLoad: true, moveMap: true, zoom: _mapZoom);
   }
 
   int _radiusForZoom(double zoom) {
@@ -169,7 +169,7 @@ class _SpotsScreenState extends State<SpotsScreen> {
 
     if (moveMap) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) _mapController.move(center, 14);
+        if (mounted) _mapController.move(center, effectiveZoom);
       });
     }
   }
@@ -290,7 +290,7 @@ class _SpotsScreenState extends State<SpotsScreen> {
                   setState(() {
                     _mapCenter = _userLocation!;
                   });
-                  _loadSpots(_userLocation!, moveMap: true);
+                  _loadSpots(_userLocation!, moveMap: true, zoom: _mapZoom);
                 } else {
                   _determinePosition();
                 }
