@@ -5,6 +5,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:geolocator/geolocator.dart';
 import '../models/spot.dart';
+import '../services/app_logger.dart';
 import '../services/spot_service.dart';
 
 class SpotsScreen extends StatefulWidget {
@@ -216,6 +217,67 @@ class _SpotsScreenState extends State<SpotsScreen> {
     );
   }
 
+  void _showLogs() {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setModalState) {
+          final entries = AppLogger.entries;
+          return DraggableScrollableSheet(
+            initialChildSize: 0.6,
+            maxChildSize: 0.92,
+            minChildSize: 0.3,
+            expand: false,
+            builder: (_, scrollController) => Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 8, 8),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.terminal, size: 20),
+                      const SizedBox(width: 8),
+                      const Text('Logs', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                      const Spacer(),
+                      TextButton(
+                        onPressed: () {
+                          AppLogger.clear();
+                          setModalState(() {});
+                        },
+                        child: const Text('Clear'),
+                      ),
+                    ],
+                  ),
+                ),
+                const Divider(height: 1),
+                Expanded(
+                  child: entries.isEmpty
+                      ? const Center(child: Text('No logs yet'))
+                      : ListView.builder(
+                          controller: scrollController,
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          itemCount: entries.length,
+                          itemBuilder: (_, i) => Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 3),
+                            child: Text(
+                              entries[i].formatted,
+                              style: const TextStyle(
+                                fontFamily: 'monospace',
+                                fontSize: 11,
+                              ),
+                            ),
+                          ),
+                        ),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -224,6 +286,11 @@ class _SpotsScreenState extends State<SpotsScreen> {
       appBar: AppBar(
         title: const Text('Spots'),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.terminal),
+            tooltip: 'View logs',
+            onPressed: _showLogs,
+          ),
           IconButton(
             icon: Icon(_useFallbackSpots ? Icons.layers : Icons.layers_clear),
             tooltip: _useFallbackSpots ? 'Hide example spots' : 'Show example spots',
