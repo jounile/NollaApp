@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
 import 'package:image_picker/image_picker.dart';
 import 'app_logger.dart';
 
@@ -26,15 +27,28 @@ class MediaService {
 
     try {
       final bytes = await file.readAsBytes();
-      final request = http.MultipartRequest('POST', Uri.parse(_uploadUrl));
-      request.headers['Authorization'] = 'Bearer $authToken';
-      request.fields['content_type'] = contentType;
-      request.files.add(
-        http.MultipartFile.fromBytes('file', bytes, filename: fileName),
+
+      final multipart = http.MultipartRequest('POST', Uri.parse(_uploadUrl));
+      multipart.fields['content_type'] = contentType;
+      multipart.files.add(
+        http.MultipartFile.fromBytes(
+          'file',
+          bytes,
+          filename: fileName,
+          contentType: MediaType.parse(_mimeType(fileName, isVideo)),
+        ),
       );
 
-      final streamed = await request.send().timeout(const Duration(minutes: 5));
-      final response = await http.Response.fromStream(streamed);
+      // Buffer the full multipart body before sending to avoid iOS
+      // NSURLSession failures when streaming an async-generator body.
+      // Get headers (content-type with boundary + content-length) and add auth.
+      final headers = multipart.headers;
+      headers['Authorization'] = 'Bearer $authToken';
+      final body = await multipart.finalize().toBytes();
+
+      final response = await http
+          .post(Uri.parse(_uploadUrl), headers: headers, body: body)
+          .timeout(const Duration(minutes: 5));
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body) as Map<String, dynamic>;
@@ -58,6 +72,33 @@ class MediaService {
         success: false,
         message: 'Network error. Please check your connection.',
       );
+    }
+  }
+
+  static String _mimeType(String fileName, bool isVideo) {
+    final ext = fileName.contains('.') ? fileName.split('.').last.toLowerCase() : '';
+    if (isVideo) {
+      switch (ext) {
+        case 'mov':
+          return 'video/quicktime';
+        case 'avi':
+          return 'video/x-msvideo';
+        default:
+          return 'video/mp4';
+      }
+    }
+    switch (ext) {
+      case 'png':
+        return 'image/png';
+      case 'gif':
+        return 'image/gif';
+      case 'webp':
+        return 'image/webp';
+      case 'heic':
+      case 'heif':
+        return 'image/heic';
+      default:
+        return 'image/jpeg';
     }
   }
 }
