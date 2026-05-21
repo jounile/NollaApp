@@ -20,15 +20,15 @@ class SpotsScreen extends StatefulWidget {
 
 class _SpotsScreenState extends State<SpotsScreen> {
   final MapController _mapController = MapController();
+  Timer? _moveDebounce;
 
   static const _defaultLocation = LatLng(60.1699, 24.9384);
 
   LatLng? _userLocation;
   LatLng _mapCenter = _defaultLocation;
   bool _isLoading = true;
+  bool _isFetchingSpots = false;
   bool _hasApiError = false;
-  bool _showSearchHere = false;
-  bool _useFallbackSpots = true;
 
   final List<_Spot> _spots = [];
 
@@ -38,10 +38,15 @@ class _SpotsScreenState extends State<SpotsScreen> {
     _determinePosition();
   }
 
+  @override
+  void dispose() {
+    _moveDebounce?.cancel();
+    super.dispose();
+  }
+
   Future<void> _determinePosition() async {
     setState(() {
       _isLoading = true;
-      _showSearchHere = false;
     });
 
     bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
@@ -100,7 +105,7 @@ class _SpotsScreenState extends State<SpotsScreen> {
         action: SnackBarAction(label: 'Retry', onPressed: _determinePosition),
       ),
     );
-    _loadSpots(_defaultLocation);
+    _loadSpots(_defaultLocation, initialLoad: true, moveMap: true);
   }
 
   void _applyPosition(Position position) {
@@ -109,14 +114,15 @@ class _SpotsScreenState extends State<SpotsScreen> {
       _userLocation = userLatLng;
       _mapCenter = userLatLng;
     });
-    _loadSpots(userLatLng);
+    _loadSpots(userLatLng, initialLoad: true, moveMap: true);
   }
 
-  Future<void> _loadSpots(LatLng center) async {
+  Future<void> _loadSpots(LatLng center, {bool initialLoad = false, bool moveMap = false}) async {
+    _moveDebounce?.cancel();
     setState(() {
-      _isLoading = true;
+      if (initialLoad) _isLoading = true;
+      _isFetchingSpots = true;
       _hasApiError = false;
-      _showSearchHere = false;
     });
 
     final result = await SpotService.fetchSpots(
@@ -130,7 +136,6 @@ class _SpotsScreenState extends State<SpotsScreen> {
       _spots.clear();
       if (result == null) {
         _hasApiError = true;
-        if (_useFallbackSpots) _spots.addAll(_fallbackSpots(center));
       } else if (result.isNotEmpty) {
         final distCalc = const Distance();
         final mapped = result.map((s) {
@@ -145,44 +150,16 @@ class _SpotsScreenState extends State<SpotsScreen> {
         }).toList()
           ..sort((a, b) => a.distanceMeters.compareTo(b.distanceMeters));
         _spots.addAll(mapped);
-      } else if (_useFallbackSpots) {
-        _spots.addAll(_fallbackSpots(center));
       }
-      _isLoading = false;
+      if (initialLoad) _isLoading = false;
+      _isFetchingSpots = false;
     });
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) _mapController.move(center, 14);
-    });
-  }
-
-  List<_Spot> _fallbackSpots(LatLng center) {
-    return [
-      _Spot(
-        name: 'Spot Alpha',
-        latLng: LatLng(center.latitude + 0.005, center.longitude + 0.007),
-        icon: Icons.terrain,
-        distanceMeters: 690,
-      ),
-      _Spot(
-        name: 'Spot Beta',
-        latLng: LatLng(center.latitude - 0.006, center.longitude + 0.003),
-        icon: Icons.water,
-        distanceMeters: 735,
-      ),
-      _Spot(
-        name: 'Spot Gamma',
-        latLng: LatLng(center.latitude + 0.003, center.longitude - 0.008),
-        icon: Icons.park,
-        distanceMeters: 830,
-      ),
-      _Spot(
-        name: 'Spot Delta',
-        latLng: LatLng(center.latitude - 0.004, center.longitude - 0.005),
-        icon: Icons.place,
-        distanceMeters: 645,
-      ),
-    ];
+    if (moveMap) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _mapController.move(center, 14);
+      });
+    }
   }
 
   void _showSpotInfo(_Spot spot) {
@@ -292,14 +269,6 @@ class _SpotsScreenState extends State<SpotsScreen> {
             tooltip: 'View logs',
             onPressed: _showLogs,
           ),
-          IconButton(
-            icon: Icon(_useFallbackSpots ? Icons.layers : Icons.layers_clear),
-            tooltip: _useFallbackSpots ? 'Hide example spots' : 'Show example spots',
-            onPressed: () {
-              setState(() => _useFallbackSpots = !_useFallbackSpots);
-              _loadSpots(_mapCenter);
-            },
-          ),
           if (!_isLoading)
             IconButton(
               icon: const Icon(Icons.my_location),
@@ -309,7 +278,7 @@ class _SpotsScreenState extends State<SpotsScreen> {
                   setState(() {
                     _mapCenter = _userLocation!;
                   });
-                  _loadSpots(_userLocation!);
+                  _loadSpots(_userLocation!, moveMap: true);
                 } else {
                   _determinePosition();
                 }
@@ -330,9 +299,10 @@ class _SpotsScreenState extends State<SpotsScreen> {
                       if (hasGesture) {
                         final center = camera.center;
                         if (center == null) return;
-                        setState(() {
-                          _mapCenter = center;
-                          _showSearchHere = true;
+                        setState(() => _mapCenter = center);
+                        _moveDebounce?.cancel();
+                        _moveDebounce = Timer(const Duration(milliseconds: 600), () {
+                          _loadSpots(_mapCenter);
                         });
                       }
                     },
@@ -399,22 +369,7 @@ class _SpotsScreenState extends State<SpotsScreen> {
                   ],
                 ),
 
-                // "Search this area" button — appears after user pans the map
-                if (_showSearchHere)
-                  Positioned(
-                    top: 16,
-                    left: 0,
-                    right: 0,
-                    child: Center(
-                      child: FilledButton.icon(
-                        icon: const Icon(Icons.search, size: 18),
-                        label: const Text('Search this area'),
-                        onPressed: () => _loadSpots(_mapCenter),
-                      ),
-                    ),
-                  ),
-
-                // Bottom status card — error, empty, or spot count
+                // Bottom status card — error, fetching, empty, or spot count
                 Positioned(
                   bottom: 16,
                   left: 16,
@@ -436,9 +391,7 @@ class _SpotsScreenState extends State<SpotsScreen> {
                                   child: Text(
                                     kIsWeb
                                         ? 'CORS error — API must allow web requests'
-                                        : _useFallbackSpots
-                                            ? 'Could not reach API — showing example spots'
-                                            : 'Failed to load spots',
+                                        : 'Failed to load spots',
                                     style: theme.textTheme.bodyMedium?.copyWith(
                                       color: theme.colorScheme.onErrorContainer,
                                     ),
@@ -461,16 +414,25 @@ class _SpotsScreenState extends State<SpotsScreen> {
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                Icon(
-                                  Icons.location_on,
-                                  color: theme.colorScheme.secondary,
-                                  size: 16,
-                                ),
+                                if (_isFetchingSpots)
+                                  const SizedBox(
+                                    width: 14,
+                                    height: 14,
+                                    child: CircularProgressIndicator(strokeWidth: 2),
+                                  )
+                                else
+                                  Icon(
+                                    Icons.location_on,
+                                    color: theme.colorScheme.secondary,
+                                    size: 16,
+                                  ),
                                 const SizedBox(width: 6),
                                 Text(
-                                  _spots.isEmpty
-                                      ? 'No spots found in this area'
-                                      : '${_spots.length} spots nearby',
+                                  _isFetchingSpots
+                                      ? 'Searching for spots...'
+                                      : _spots.isEmpty
+                                          ? 'No spots found in this area'
+                                          : '${_spots.length} spots nearby',
                                   style: theme.textTheme.bodyMedium?.copyWith(
                                     fontWeight: FontWeight.w500,
                                   ),

@@ -56,7 +56,11 @@ class SpotService {
         final spots = <Spot>[];
         for (final e in list) {
           try {
-            spots.add(Spot.fromJson(e as Map<String, dynamic>));
+            final spot = Spot.fromJson(e as Map<String, dynamic>);
+            if (spot.latitude == 0.0 && spot.longitude == 0.0) {
+              AppLogger.log('[SpotService] warning: spot "${spot.name}" has 0,0 coords — raw keys: ${e.keys.toList()}');
+            }
+            spots.add(spot);
           } catch (parseErr) {
             AppLogger.log('[SpotService] skipped malformed spot: $parseErr — data: $e');
           }
