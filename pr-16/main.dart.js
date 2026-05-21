@@ -29203,7 +29203,7 @@ a=A.fq("https://nolla.net/api/v1/spots")
 a0=t.N
 n=A.A(a0,t.z)
 J.es(n,"lat",B.c.k(b7))
-J.es(n,"lng",B.c.k(b8))
+J.es(n,"lon",B.c.k(b8))
 J.es(n,"radius",B.f.k(b9))
 m=a.Yf(0,n)
 l=A.aA(["Accept","application/json"],a0,a0)
