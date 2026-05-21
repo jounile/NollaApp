@@ -31,7 +31,7 @@ const RESOURCES = {"assets/shaders/ink_sparkle.frag": "ecc85a2e95f5e9f53123dcaf8
 "canvaskit/skwasm.worker.js": "bfb704a6c714a75da9ef320991e88b03",
 "canvaskit/canvaskit.js": "738255d00768497e86aa4ca510cce1e1",
 "canvaskit/skwasm.wasm": "4051bfc27ba29bf420d17aa0c3a98bce",
-"flutter_bootstrap.js": "e0bf344b2c24a3ddd224fe786722c19d",
+"flutter_bootstrap.js": "68afae8e3bb4f28bb27a9e7b0c448c9b",
 "manifest.json": "431eaa3225ccc686218bccf93eb161d0",
 "main.dart.js": "4ae4d0fdd8282050a6e0258c338f9563"};
 // The application shell files that are downloaded before a service worker can
