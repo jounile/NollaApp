@@ -119,12 +119,12 @@ class _SpotsScreenState extends State<SpotsScreen> {
   }
 
   int _radiusForZoom(double zoom) {
-    if (zoom <= 8) return 100000;
-    if (zoom <= 10) return 50000;
-    if (zoom <= 12) return 10000;
-    if (zoom <= 14) return 3000;
-    if (zoom <= 16) return 1000;
-    return 500;
+    if (zoom <= 8) return 50000;
+    if (zoom <= 10) return 10000;
+    if (zoom <= 12) return 2000;
+    if (zoom <= 14) return 500;
+    if (zoom <= 16) return 200;
+    return 100;
   }
 
   Future<void> _loadSpots(LatLng center, {bool initialLoad = false, bool moveMap = false, double? zoom}) async {
