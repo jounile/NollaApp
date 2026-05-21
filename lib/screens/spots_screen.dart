@@ -313,7 +313,7 @@ class _SpotsScreenState extends State<SpotsScreen> {
                         if (center == null) return;
                         setState(() {
                           _mapCenter = center;
-                          _mapZoom = camera.zoom;
+                          _mapZoom = camera.zoom ?? _mapZoom;
                         });
                         _moveDebounce?.cancel();
                         _moveDebounce = Timer(const Duration(milliseconds: 600), () {
