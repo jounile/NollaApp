@@ -26,6 +26,7 @@ class _SpotsScreenState extends State<SpotsScreen> {
 
   LatLng? _userLocation;
   LatLng _mapCenter = _defaultLocation;
+  double _mapZoom = 14;
   bool _isLoading = true;
   bool _isFetchingSpots = false;
   bool _hasApiError = false;
@@ -117,7 +118,16 @@ class _SpotsScreenState extends State<SpotsScreen> {
     _loadSpots(userLatLng, initialLoad: true, moveMap: true);
   }
 
-  Future<void> _loadSpots(LatLng center, {bool initialLoad = false, bool moveMap = false}) async {
+  int _radiusForZoom(double zoom) {
+    if (zoom <= 8) return 100000;
+    if (zoom <= 10) return 50000;
+    if (zoom <= 12) return 10000;
+    if (zoom <= 14) return 3000;
+    if (zoom <= 16) return 1000;
+    return 500;
+  }
+
+  Future<void> _loadSpots(LatLng center, {bool initialLoad = false, bool moveMap = false, double? zoom}) async {
     _moveDebounce?.cancel();
     setState(() {
       if (initialLoad) _isLoading = true;
@@ -125,9 +135,11 @@ class _SpotsScreenState extends State<SpotsScreen> {
       _hasApiError = false;
     });
 
+    final effectiveZoom = zoom ?? _mapZoom;
     final result = await SpotService.fetchSpots(
       latitude: center.latitude,
       longitude: center.longitude,
+      radius: _radiusForZoom(effectiveZoom),
       authToken: widget.authToken,
     );
 
@@ -299,10 +311,13 @@ class _SpotsScreenState extends State<SpotsScreen> {
                       if (hasGesture) {
                         final center = camera.center;
                         if (center == null) return;
-                        setState(() => _mapCenter = center);
+                        setState(() {
+                          _mapCenter = center;
+                          _mapZoom = camera.zoom;
+                        });
                         _moveDebounce?.cancel();
                         _moveDebounce = Timer(const Duration(milliseconds: 600), () {
-                          _loadSpots(_mapCenter);
+                          _loadSpots(_mapCenter, zoom: _mapZoom);
                         });
                       }
                     },

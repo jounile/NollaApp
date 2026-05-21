@@ -11,6 +11,7 @@ class SpotService {
   static Future<List<Spot>?> fetchSpots({
     double? latitude,
     double? longitude,
+    int? radius,
     String? authToken,
   }) async {
     try {
@@ -18,6 +19,7 @@ class SpotService {
         queryParameters: {
           if (latitude != null) 'lat': latitude.toString(),
           if (longitude != null) 'lng': longitude.toString(),
+          if (radius != null) 'radius': radius.toString(),
         },
       );
       final headers = <String, String>{'Accept': 'application/json'};
