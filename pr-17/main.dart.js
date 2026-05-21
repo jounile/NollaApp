@@ -93331,12 +93331,20 @@ r.toString
 s.r=r},
 $S:0}
 A.atV.prototype={
-$2(a,b){var s,r
-if(b){s=this.a
-s.a8(new A.atO(s,a.a))
-r=s.e
-if(r!=null)r.aq(0)
-s.e=A.bY(B.de,new A.atP(s))}},
+$2(a,b){var s,r,q,p
+if(b){s=a.a
+r=s.a
+if(!isFinite(r)||!isFinite(s.b))return
+if(r<-90||r>90)return
+r=s.b
+if(r<-180||r>180)return
+q=a.c
+if(!isFinite(q)||q<3)return
+r=this.a
+r.a8(new A.atO(r,s))
+p=r.e
+if(p!=null)p.aq(0)
+r.e=A.bY(B.de,new A.atP(r))}},
 $S:561}
 A.atO.prototype={
 $0(){return this.a.r=this.b},
