@@ -51,6 +51,20 @@ flutter build web --release --base-href /NollaApp/
 - Accessible in `SpotsScreen` and `MediaScreen` via a terminal icon → modal bottom sheet.
 - Use this instead of `print()` (which is linted away).
 
+## Key Features
+
+### Login (`lib/screens/login_screen.dart`)
+Form with username/password fields. On submit, calls `AuthService.login()` which POSTs to `https://nolla.net/auth/api/login`. On success, replaces the route stack with `MainScreen`, passing the JWT token and username. The form pre-fills `testaaja1`/`testaaja1` as test credentials. When built with `--dart-define=BRANCH_NAME=<name>`, the branch name is shown below the sign-in button (useful in CI preview builds).
+
+### Spots (`lib/screens/spots_screen.dart`)
+Interactive OpenStreetMap view (via `flutter_map`) showing community spots near the user. On load, requests device location via `geolocator`; permission denied or timeout (15 s) falls back to Helsinki with a snackbar + Retry button. Last-known position is tried before the fallback. Spots are fetched from `SpotService` using the current map centre and a radius derived from zoom level (zoom ≤ 8 → 50 km, zoom ≥ 17 → 100 m). Map pans trigger a re-fetch after 600 ms debounce. The API result is sorted by distance and capped at 100 markers. Tapping a marker opens a bottom sheet with the spot name, type icon, and formatted distance. A "my location" button recentres the map. CORS failures on web show a dedicated error card.
+
+### Media Upload (`lib/screens/media_screen.dart`)
+Grid of selected media items (photos and videos). A FAB opens a bottom sheet with four source options: gallery photo, camera photo, gallery video, recorded video. Images are compressed to max 1920×1920 at 85% quality at pick time. Each item tracks an `UploadStatus` (`pending → uploading → uploaded | failed`); the tile overlays a spinner, green check, or red refresh icon accordingly. "Upload" in the app bar sends all pending/failed items sequentially via `MediaService.uploadFile()` (multipart POST, 5-minute timeout). Items can be deleted unless currently uploading.
+
+### Logout (`lib/screens/main_screen.dart`)
+The bottom nav bar has a fourth "Logout" destination (index 3) that does not switch tabs — it opens a confirmation `AlertDialog` instead. Confirming calls `pushAndRemoveUntil` back to `LoginScreen`, clearing the entire navigation stack and discarding the JWT token.
+
 ## CI/CD
 
 `.github/workflows/build.yml` runs on every push/PR:
