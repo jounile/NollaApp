@@ -12,8 +12,8 @@ test('login with test credentials navigates to main screen', async ({ page }) =>
   // Append ?flutter.semantics=true so Flutter CanvasKit exposes form inputs as real DOM elements
   await page.goto(`${BASE_URL}?flutter.semantics=true`);
 
-  // Wait for Flutter to boot and the username input to appear (up to 45s for cold GH Pages load)
-  await page.waitForSelector('input[type="text"]', { timeout: 45000 });
+  // Assert the login form is visible — guards against a false pass if the form never rendered
+  await expect(page.locator('input[type="password"]')).toBeVisible({ timeout: 45000 });
 
   await page.getByLabel('Username').fill(USERNAME);
   await page.getByLabel('Password').fill(PASSWORD);
@@ -21,6 +21,7 @@ test('login with test credentials navigates to main screen', async ({ page }) =>
   // Submit — FilledButton with "Sign In" text is exposed as an ARIA button via Flutter semantics
   await page.getByRole('button', { name: 'Sign In' }).click();
 
-  // Successful login routes to MainScreen; the password input leaves the DOM
-  await expect(page.locator('input[type="password"]')).toBeHidden({ timeout: 20000 });
+  // Positive assertion: MainScreen's bottom nav bar has a Logout destination that only
+  // appears after successful login. This fails if login was rejected or navigation didn't happen.
+  await expect(page.getByRole('button', { name: 'Logout' })).toBeVisible({ timeout: 20000 });
 });
