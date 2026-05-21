@@ -162,7 +162,7 @@ class _SpotsScreenState extends State<SpotsScreen> {
           );
         }).toList()
           ..sort((a, b) => a.distanceMeters.compareTo(b.distanceMeters));
-        _spots.addAll(mapped);
+        _spots.addAll(mapped.take(100));
       }
       if (initialLoad) _isLoading = false;
       _isFetchingSpots = false;

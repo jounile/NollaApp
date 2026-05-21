@@ -20,7 +20,6 @@ class SpotService {
           if (latitude != null) 'lat': latitude.toString(),
           if (longitude != null) 'lon': longitude.toString(),
           if (radius != null) 'radius': radius.toString(),
-          'limit': '100',
         },
       );
       final headers = <String, String>{'Accept': 'application/json'};
