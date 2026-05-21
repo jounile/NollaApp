@@ -93171,12 +93171,12 @@ r.ma(B.jZ,!0,!0,r.w)},
 Mx(a){var s=this,r=new A.ev(a.a,a.b)
 s.a8(new A.atA(s,r))
 s.ma(r,!0,!0,s.w)},
-afP(a){if(a<=8)return 1e5
-if(a<=10)return 5e4
-if(a<=12)return 1e4
-if(a<=14)return 3000
-if(a<=16)return 1000
-return 500},
+afP(a){if(a<=8)return 5e4
+if(a<=10)return 1e4
+if(a<=12)return 2000
+if(a<=14)return 500
+if(a<=16)return 200
+return 100},
 ma(a,b,c,d){return this.acT(a,b,c,d)},
 acR(a,b){return this.ma(a,!1,!1,b)},
 acQ(a){return this.ma(a,!1,!1,null)},
