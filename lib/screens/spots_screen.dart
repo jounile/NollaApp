@@ -314,9 +314,14 @@ class _SpotsScreenState extends State<SpotsScreen> {
                       if (hasGesture) {
                         final center = camera.center;
                         if (center == null) return;
+                        if (!center.latitude.isFinite || !center.longitude.isFinite) return;
+                        if (center.latitude < -90 || center.latitude > 90) return;
+                        if (center.longitude < -180 || center.longitude > 180) return;
+                        final zoom = camera.zoom;
+                        if (zoom == null || !zoom.isFinite || zoom < 3) return;
                         setState(() {
                           _mapCenter = center;
-                          _mapZoom = camera.zoom ?? _mapZoom;
+                          _mapZoom = zoom;
                         });
                         _moveDebounce?.cancel();
                         _moveDebounce = Timer(const Duration(milliseconds: 600), () {
