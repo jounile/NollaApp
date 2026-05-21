@@ -308,13 +308,20 @@ class _SpotsScreenState extends State<SpotsScreen> {
                   options: MapOptions(
                     initialCenter: _mapCenter,
                     initialZoom: 14,
+                    minZoom: 3,
+                    maxZoom: 19,
                     onPositionChanged: (camera, hasGesture) {
                       if (hasGesture) {
                         final center = camera.center;
                         if (center == null) return;
+                        if (!center.latitude.isFinite || !center.longitude.isFinite) return;
+                        if (center.latitude < -90 || center.latitude > 90) return;
+                        if (center.longitude < -180 || center.longitude > 180) return;
+                        final zoom = camera.zoom;
+                        if (zoom == null || !zoom.isFinite || zoom < 3) return;
                         setState(() {
                           _mapCenter = center;
-                          _mapZoom = camera.zoom ?? _mapZoom;
+                          _mapZoom = zoom;
                         });
                         _moveDebounce?.cancel();
                         _moveDebounce = Timer(const Duration(milliseconds: 600), () {
