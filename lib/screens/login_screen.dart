@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
 import 'main_screen.dart';
 
+const String _kBranch = String.fromEnvironment('BRANCH_NAME');
+
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -160,6 +162,17 @@ class _LoginScreenState extends State<LoginScreen> {
                             )
                           : const Text('Sign In', style: TextStyle(fontSize: 16)),
                     ),
+                    if (_kBranch.isNotEmpty) ...[
+                      const SizedBox(height: 32),
+                      Text(
+                        _kBranch,
+                        textAlign: TextAlign.center,
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant.withOpacity(0.5),
+                          fontFamily: 'monospace',
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),
