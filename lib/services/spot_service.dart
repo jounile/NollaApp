@@ -3,11 +3,12 @@ import 'package:http/http.dart' as http;
 import '../models/spot.dart';
 
 class SpotService {
-  static const String _spotsUrl = 'https://nolla.net/api/spots';
+  static const String _spotsUrl = 'https://nolla.net/api/v1/spots';
 
   static Future<List<Spot>> fetchSpots({
     double? latitude,
     double? longitude,
+    String? authToken,
   }) async {
     try {
       final uri = Uri.parse(_spotsUrl).replace(
@@ -16,12 +17,23 @@ class SpotService {
           if (longitude != null) 'lng': longitude.toString(),
         },
       );
+      final headers = <String, String>{'Accept': 'application/json'};
+      if (authToken != null && authToken.isNotEmpty) {
+        headers['Authorization'] = 'Bearer $authToken';
+      }
       final response = await http
-          .get(uri, headers: {'Accept': 'application/json'})
+          .get(uri, headers: headers)
           .timeout(const Duration(seconds: 10));
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body) as Map<String, dynamic>;
-        final list = data['spots'] as List<dynamic>;
+        final body = jsonDecode(response.body);
+        List<dynamic> list;
+        if (body is List) {
+          list = body;
+        } else if (body is Map<String, dynamic>) {
+          list = (body['spots'] ?? body['data'] ?? body['results'] ?? []) as List<dynamic>;
+        } else {
+          return [];
+        }
         return list
             .map((e) => Spot.fromJson(e as Map<String, dynamic>))
             .toList();

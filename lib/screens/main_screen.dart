@@ -19,7 +19,7 @@ class _MainScreenState extends State<MainScreen> {
 
   late final List<Widget> _pages = [
     HomeScreen(username: widget.username),
-    const SpotsScreen(),
+    SpotsScreen(authToken: widget.authToken),
     MediaScreen(authToken: widget.authToken),
   ];
 

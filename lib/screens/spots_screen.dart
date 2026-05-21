@@ -8,7 +8,9 @@ import '../models/spot.dart';
 import '../services/spot_service.dart';
 
 class SpotsScreen extends StatefulWidget {
-  const SpotsScreen({super.key});
+  final String authToken;
+
+  const SpotsScreen({super.key, required this.authToken});
 
   @override
   State<SpotsScreen> createState() => _SpotsScreenState();
@@ -107,16 +109,25 @@ class _SpotsScreenState extends State<SpotsScreen> {
     final fetched = await SpotService.fetchSpots(
       latitude: center.latitude,
       longitude: center.longitude,
+      authToken: widget.authToken,
     );
     if (!mounted) return;
     setState(() {
       _spots.clear();
       if (fetched.isNotEmpty) {
-        _spots.addAll(fetched.map((s) => _Spot(
-              name: s.name,
-              latLng: LatLng(s.latitude, s.longitude),
-              icon: _spotTypeToIcon(s.type),
-            )));
+        final distCalc = const Distance();
+        final mapped = fetched.map((s) {
+          final spotLatLng = LatLng(s.latitude, s.longitude);
+          final distMeters = s.distance ?? distCalc.as(LengthUnit.Meter, center, spotLatLng);
+          return _Spot(
+            name: s.name,
+            latLng: spotLatLng,
+            icon: _spotTypeToIcon(s.type),
+            distanceMeters: distMeters,
+          );
+        }).toList()
+          ..sort((a, b) => a.distanceMeters.compareTo(b.distanceMeters));
+        _spots.addAll(mapped);
       } else {
         _spots.addAll(_fallbackSpots(center));
       }
@@ -161,9 +172,23 @@ class _SpotsScreenState extends State<SpotsScreen> {
           children: [
             Icon(spot.icon, size: 40, color: Theme.of(ctx).colorScheme.primary),
             const SizedBox(width: 16),
-            Text(
-              spot.name,
-              style: Theme.of(ctx).textTheme.titleLarge,
+            Expanded(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(spot.name, style: Theme.of(ctx).textTheme.titleLarge),
+                  const SizedBox(height: 4),
+                  Text(
+                    spot.distanceMeters < 1000
+                        ? '${spot.distanceMeters.round()} m away'
+                        : '${(spot.distanceMeters / 1000).toStringAsFixed(1)} km away',
+                    style: Theme.of(ctx).textTheme.bodyMedium?.copyWith(
+                          color: Theme.of(ctx).colorScheme.onSurfaceVariant,
+                        ),
+                  ),
+                ],
+              ),
             ),
           ],
         ),
@@ -326,6 +351,12 @@ class _Spot {
   final String name;
   final LatLng latLng;
   final IconData icon;
+  final double distanceMeters;
 
-  const _Spot({required this.name, required this.latLng, required this.icon});
+  const _Spot({
+    required this.name,
+    required this.latLng,
+    required this.icon,
+    this.distanceMeters = 0,
+  });
 }

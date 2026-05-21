@@ -4,6 +4,7 @@ class Spot {
   final double latitude;
   final double longitude;
   final String type;
+  final double? distance;
 
   const Spot({
     required this.id,
@@ -11,6 +12,7 @@ class Spot {
     required this.latitude,
     required this.longitude,
     required this.type,
+    this.distance,
   });
 
   factory Spot.fromJson(Map<String, dynamic> json) => Spot(
@@ -19,5 +21,6 @@ class Spot {
         latitude: (json['latitude'] as num).toDouble(),
         longitude: (json['longitude'] as num).toDouble(),
         type: json['type'] as String? ?? 'place',
+        distance: json['distance'] != null ? (json['distance'] as num).toDouble() : null,
       );
 }
