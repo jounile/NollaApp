@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../models/spot.dart';
 
@@ -22,16 +23,32 @@ class SpotService {
       if (authToken != null && authToken.isNotEmpty) {
         headers['Authorization'] = 'Bearer $authToken';
       }
+      debugPrint('[SpotService] GET $uri');
       final response = await http
           .get(uri, headers: headers)
           .timeout(const Duration(seconds: 10));
+      debugPrint('[SpotService] status=${response.statusCode} body=${response.body}');
       if (response.statusCode == 200) {
         final body = jsonDecode(response.body);
         List<dynamic> list;
         if (body is List) {
           list = body;
         } else if (body is Map<String, dynamic>) {
-          list = (body['spots'] ?? body['data'] ?? body['results'] ?? []) as List<dynamic>;
+          // Try common wrapper keys used by REST APIs
+          final dynamic raw = body['spots'] ??
+              body['data'] ??
+              body['results'] ??
+              body['nearest'] ??
+              body['items'] ??
+              body['locations'];
+          if (raw is List) {
+            list = raw;
+          } else if (raw == null) {
+            debugPrint('[SpotService] no known list key found in response keys: ${body.keys}');
+            return [];
+          } else {
+            list = [];
+          }
         } else {
           return [];
         }
@@ -39,8 +56,10 @@ class SpotService {
             .map((e) => Spot.fromJson(e as Map<String, dynamic>))
             .toList();
       }
+      debugPrint('[SpotService] non-200 status: ${response.statusCode}');
       return null;
-    } catch (_) {
+    } catch (e) {
+      debugPrint('[SpotService] exception: $e');
       return null;
     }
   }

@@ -346,7 +346,7 @@ class _SpotsScreenState extends State<SpotsScreen> {
                     ),
                   ),
 
-                // Bottom status card — error or spot count
+                // Bottom status card — error, empty, or spot count
                 Positioned(
                   bottom: 16,
                   left: 16,
@@ -359,14 +359,16 @@ class _SpotsScreenState extends State<SpotsScreen> {
                             child: Row(
                               children: [
                                 Icon(
-                                  Icons.error_outline,
+                                  Icons.wifi_off,
                                   color: theme.colorScheme.onErrorContainer,
                                   size: 18,
                                 ),
                                 const SizedBox(width: 8),
                                 Expanded(
                                   child: Text(
-                                    'Failed to load spots',
+                                    _useFallbackSpots
+                                        ? 'Could not reach API — showing example spots'
+                                        : 'Failed to load spots',
                                     style: theme.textTheme.bodyMedium?.copyWith(
                                       color: theme.colorScheme.onErrorContainer,
                                     ),
@@ -397,7 +399,7 @@ class _SpotsScreenState extends State<SpotsScreen> {
                                 const SizedBox(width: 6),
                                 Text(
                                   _spots.isEmpty
-                                      ? 'No spots in this area'
+                                      ? 'No spots found in this area'
                                       : '${_spots.length} spots nearby',
                                   style: theme.textTheme.bodyMedium?.copyWith(
                                     fontWeight: FontWeight.w500,
