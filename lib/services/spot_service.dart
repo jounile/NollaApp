@@ -18,7 +18,7 @@ class SpotService {
       final uri = Uri.parse(_spotsUrl).replace(
         queryParameters: {
           if (latitude != null) 'lat': latitude.toString(),
-          if (longitude != null) 'lng': longitude.toString(),
+          if (longitude != null) 'lon': longitude.toString(),
           if (radius != null) 'radius': radius.toString(),
         },
       );
