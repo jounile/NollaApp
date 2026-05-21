@@ -51,12 +51,22 @@ class MediaService {
           .timeout(const Duration(minutes: 5));
 
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body) as Map<String, dynamic>;
-        final url = data['url'] as String?;
+        String? url;
+        if (response.body.isNotEmpty) {
+          final data = jsonDecode(response.body) as Map<String, dynamic>;
+          url = data['url'] as String?;
+        }
         AppLogger.log('Upload succeeded: $fileName → $url');
         return UploadResult(success: true, message: 'Uploaded', url: url);
       }
-      final data = jsonDecode(response.body) as Map<String, dynamic>? ?? {};
+      Map<String, dynamic> data = {};
+      if (response.body.isNotEmpty) {
+        try {
+          data = jsonDecode(response.body) as Map<String, dynamic>? ?? {};
+        } on FormatException {
+          AppLogger.log('Upload error: non-JSON response body for $fileName');
+        }
+      }
       final message = data['message'] as String? ?? 'Upload failed';
       AppLogger.log('Upload failed: $fileName — HTTP ${response.statusCode}: $message');
       return UploadResult(success: false, message: message);
