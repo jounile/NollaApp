@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
@@ -433,9 +434,11 @@ class _SpotsScreenState extends State<SpotsScreen> {
                                 const SizedBox(width: 8),
                                 Expanded(
                                   child: Text(
-                                    _useFallbackSpots
-                                        ? 'Could not reach API — showing example spots'
-                                        : 'Failed to load spots',
+                                    kIsWeb
+                                        ? 'CORS error — API must allow web requests'
+                                        : _useFallbackSpots
+                                            ? 'Could not reach API — showing example spots'
+                                            : 'Failed to load spots',
                                     style: theme.textTheme.bodyMedium?.copyWith(
                                       color: theme.colorScheme.onErrorContainer,
                                     ),

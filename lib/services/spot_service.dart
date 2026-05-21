@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../models/spot.dart';
 import 'app_logger.dart';
@@ -52,14 +53,24 @@ class SpotService {
         } else {
           return [];
         }
-        return list
-            .map((e) => Spot.fromJson(e as Map<String, dynamic>))
-            .toList();
+        final spots = <Spot>[];
+        for (final e in list) {
+          try {
+            spots.add(Spot.fromJson(e as Map<String, dynamic>));
+          } catch (parseErr) {
+            AppLogger.log('[SpotService] skipped malformed spot: $parseErr — data: $e');
+          }
+        }
+        AppLogger.log('[SpotService] parsed ${spots.length} of ${list.length} spots');
+        return spots;
       }
       AppLogger.log('[SpotService] non-200 status: ${response.statusCode}');
       return null;
     } catch (e) {
-      AppLogger.log('[SpotService] exception: $e');
+      final isCors = kIsWeb && e.toString().contains('XMLHttpRequest');
+      AppLogger.log(isCors
+          ? '[SpotService] CORS error — server must add Access-Control-Allow-Origin header'
+          : '[SpotService] exception: $e');
       return null;
     }
   }
