@@ -93185,7 +93185,8 @@ acT(a,b,c,d){var s=0,r=A.Q(t.H),q,p=this,o,n,m
 var $async$ma=A.M(function(e,f){if(e===1)return A.N(f,r)
 while(true)switch(s){case 0:m=p.e
 if(m!=null)m.aq(0)
-p.a8(new A.atE(p,b))
+if(p.c==null){s=1
+break}p.a8(new A.atE(p,b))
 o=d==null?p.w:d
 m=p.afP(o)
 s=3
@@ -93353,6 +93354,7 @@ s.w=this.c.c},
 $S:0}
 A.atP.prototype={
 $0(){var s=this.a
+if(s.c==null)return
 s.acR(s.r,s.w)},
 $S:0}
 A.atT.prototype={
