@@ -123,7 +123,7 @@ jobs:
 
       - name: Build web (PR preview)
         if: github.event_name == 'pull_request'
-        run: flutter build web --release --base-href /NollaApp/pr-${{ github.event.pull_request.number }}/ --dart-define=BRANCH_NAME=${{ github.head_ref }}
+        run: flutter build web --release --base-href /NollaApp/pr-${{ github.event.pull_request.number }}/ --dart-define=BRANCH_NAME=${{ github.head_ref }} --dart-define=TEST_USERNAME=${{ secrets.TEST_USERNAME }} --dart-define=TEST_PASSWORD=${{ secrets.TEST_PASSWORD }}
 
       - name: Deploy to GitHub Pages (main)
         if: github.event_name != 'pull_request'
