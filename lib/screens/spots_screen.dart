@@ -260,8 +260,10 @@ class _SpotsScreenState extends State<SpotsScreen> {
                     initialZoom: 14,
                     onPositionChanged: (camera, hasGesture) {
                       if (hasGesture) {
+                        final center = camera.center;
+                        if (center == null) return;
                         setState(() {
-                          _mapCenter = camera.center;
+                          _mapCenter = center;
                           _showSearchHere = true;
                         });
                       }
