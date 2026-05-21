@@ -70,7 +70,7 @@ The bottom nav bar has a fourth "Logout" destination (index 3) that does not swi
 `.github/workflows/build.yml` runs on every push/PR:
 - `flutter test` gates all builds.
 - Builds Android APK, iOS simulator binary, and Web on every PR.
-- Web previews are deployed to `gh-pages` at `/pr-{number}/`; main branch deploys to `/`.
+- Web previews are deployed to `gh-pages` at `/pr-{number}/`; main branch deploys to `/`. Each PR receives an automated comment with a direct link: `https://jounile.github.io/NollaApp/pr-{number}/` — use this to test the web build in a browser without a local setup.
 - PRs receive automated comments with APK download links and web preview URLs.
 - Merges to `main` create a GitHub Release with the APK attached.
 - Branch name is injected at build time via `--dart-define=BRANCH_NAME`.
