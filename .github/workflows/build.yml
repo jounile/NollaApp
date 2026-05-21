@@ -225,6 +225,8 @@ jobs:
         working-directory: e2e
         env:
           BASE_URL: https://jounile.github.io/NollaApp/pr-${{ github.event.pull_request.number }}/
+          TEST_USERNAME: ${{ secrets.TEST_USERNAME }}
+          TEST_PASSWORD: ${{ secrets.TEST_PASSWORD }}
 
       - name: Upload screenshots and test results
         if: always()
@@ -251,7 +253,7 @@ jobs:
             const icon = passed ? '✅' : '❌';
             const status = passed ? 'Passed' : 'Failed';
             const detail = passed
-              ? 'Login with `testaaja1` / `testaaja1` succeeded and navigated to the main screen.'
+              ? 'Login with test credentials succeeded and navigated to the main screen.'
               : `Login test failed — see [screenshots and logs](${runUrl}).`;
 
             const body = `### Login Browser Test\n\n${icon} **${status}**\n\n${detail}\n\n[Open preview](${previewUrl})`;
