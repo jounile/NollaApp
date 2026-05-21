@@ -129,6 +129,7 @@ class _SpotsScreenState extends State<SpotsScreen> {
 
   Future<void> _loadSpots(LatLng center, {bool initialLoad = false, bool moveMap = false, double? zoom}) async {
     _moveDebounce?.cancel();
+    if (!mounted) return;
     setState(() {
       if (initialLoad) _isLoading = true;
       _isFetchingSpots = true;
@@ -317,6 +318,7 @@ class _SpotsScreenState extends State<SpotsScreen> {
                         });
                         _moveDebounce?.cancel();
                         _moveDebounce = Timer(const Duration(milliseconds: 600), () {
+                          if (!mounted) return;
                           _loadSpots(_mapCenter, zoom: _mapZoom);
                         });
                       }
