@@ -12,16 +12,18 @@ test('login with test credentials navigates to main screen', async ({ page }) =>
   // Append ?flutter.semantics=true so Flutter CanvasKit exposes form inputs as real DOM elements
   await page.goto(`${BASE_URL}?flutter.semantics=true`);
 
-  // Assert the login form is visible — guards against a false pass if the form never rendered
-  await expect(page.locator('input[type="password"]')).toBeVisible({ timeout: 45000 });
+  // Flutter CanvasKit renders into a canvas and exposes an flt-semantics overlay —
+  // there are no <input> elements. TextFormField → role="textbox", Button → role="button".
 
-  await page.getByLabel('Username').fill(USERNAME);
-  await page.getByLabel('Password').fill(PASSWORD);
+  // Wait for the login form: Sign In button presence confirms Flutter booted and rendered
+  await expect(page.getByRole('button', { name: 'Sign In' })).toBeVisible({ timeout: 45000 });
 
-  // Submit — FilledButton with "Sign In" text is exposed as an ARIA button via Flutter semantics
+  // Fill credentials via the semantic textbox role Flutter exposes for each TextFormField
+  await page.getByRole('textbox', { name: 'Username' }).fill(USERNAME);
+  await page.getByRole('textbox', { name: 'Password' }).fill(PASSWORD);
+
   await page.getByRole('button', { name: 'Sign In' }).click();
 
-  // Positive assertion: MainScreen's bottom nav bar has a Logout destination that only
-  // appears after successful login. This fails if login was rejected or navigation didn't happen.
+  // Positive assertion: the Logout destination only appears in MainScreen's NavigationBar
   await expect(page.getByRole('button', { name: 'Logout' })).toBeVisible({ timeout: 20000 });
 });
