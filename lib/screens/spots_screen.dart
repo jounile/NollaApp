@@ -26,6 +26,7 @@ class _SpotsScreenState extends State<SpotsScreen> {
 
   LatLng? _userLocation;
   LatLng _mapCenter = _defaultLocation;
+  double _mapZoom = 14;
   bool _isLoading = true;
   bool _isFetchingSpots = false;
   bool _hasApiError = false;
@@ -105,7 +106,7 @@ class _SpotsScreenState extends State<SpotsScreen> {
         action: SnackBarAction(label: 'Retry', onPressed: _determinePosition),
       ),
     );
-    _loadSpots(_defaultLocation, initialLoad: true, moveMap: true);
+    _loadSpots(_defaultLocation, initialLoad: true, moveMap: true, zoom: _mapZoom);
   }
 
   void _applyPosition(Position position) {
@@ -114,20 +115,32 @@ class _SpotsScreenState extends State<SpotsScreen> {
       _userLocation = userLatLng;
       _mapCenter = userLatLng;
     });
-    _loadSpots(userLatLng, initialLoad: true, moveMap: true);
+    _loadSpots(userLatLng, initialLoad: true, moveMap: true, zoom: _mapZoom);
   }
 
-  Future<void> _loadSpots(LatLng center, {bool initialLoad = false, bool moveMap = false}) async {
+  int _radiusForZoom(double zoom) {
+    if (zoom <= 8) return 50000;
+    if (zoom <= 10) return 10000;
+    if (zoom <= 12) return 2000;
+    if (zoom <= 14) return 500;
+    if (zoom <= 16) return 200;
+    return 100;
+  }
+
+  Future<void> _loadSpots(LatLng center, {bool initialLoad = false, bool moveMap = false, double? zoom}) async {
     _moveDebounce?.cancel();
+    if (!mounted) return;
     setState(() {
       if (initialLoad) _isLoading = true;
       _isFetchingSpots = true;
       _hasApiError = false;
     });
 
+    final effectiveZoom = zoom ?? _mapZoom;
     final result = await SpotService.fetchSpots(
       latitude: center.latitude,
       longitude: center.longitude,
+      radius: _radiusForZoom(effectiveZoom),
       authToken: widget.authToken,
     );
 
@@ -149,7 +162,7 @@ class _SpotsScreenState extends State<SpotsScreen> {
           );
         }).toList()
           ..sort((a, b) => a.distanceMeters.compareTo(b.distanceMeters));
-        _spots.addAll(mapped);
+        _spots.addAll(mapped.take(100));
       }
       if (initialLoad) _isLoading = false;
       _isFetchingSpots = false;
@@ -157,7 +170,7 @@ class _SpotsScreenState extends State<SpotsScreen> {
 
     if (moveMap) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) _mapController.move(center, 14);
+        if (mounted) _mapController.move(center, effectiveZoom);
       });
     }
   }
@@ -278,7 +291,7 @@ class _SpotsScreenState extends State<SpotsScreen> {
                   setState(() {
                     _mapCenter = _userLocation!;
                   });
-                  _loadSpots(_userLocation!, moveMap: true);
+                  _loadSpots(_userLocation!, moveMap: true, zoom: _mapZoom);
                 } else {
                   _determinePosition();
                 }
@@ -299,10 +312,14 @@ class _SpotsScreenState extends State<SpotsScreen> {
                       if (hasGesture) {
                         final center = camera.center;
                         if (center == null) return;
-                        setState(() => _mapCenter = center);
+                        setState(() {
+                          _mapCenter = center;
+                          _mapZoom = camera.zoom ?? _mapZoom;
+                        });
                         _moveDebounce?.cancel();
                         _moveDebounce = Timer(const Duration(milliseconds: 600), () {
-                          _loadSpots(_mapCenter);
+                          if (!mounted) return;
+                          _loadSpots(_mapCenter, zoom: _mapZoom);
                         });
                       }
                     },
