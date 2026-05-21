@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
-import 'package:http_parser/http_parser.dart';
 import 'package:image_picker/image_picker.dart';
 import 'app_logger.dart';
 
@@ -24,30 +23,32 @@ class MediaService {
   ) async {
     final fileName = file.name;
     final contentType = isVideo ? 'video' : 'image';
+    final mimeType = _mimeType(fileName, isVideo);
 
     try {
       final bytes = await file.readAsBytes();
       AppLogger.log('Upload started: $fileName ($contentType, ${bytes.length} bytes)');
 
-      final multipart = http.MultipartRequest('POST', Uri.parse(_uploadUrl));
-      multipart.fields['content_type'] = contentType;
-      multipart.files.add(
-        http.MultipartFile.fromBytes(
-          'file',
-          bytes,
-          filename: fileName,
-          contentType: MediaType.parse(_mimeType(fileName, isVideo)),
-        ),
-      );
+      final boundary = 'NollaAppBoundary${DateTime.now().millisecondsSinceEpoch}';
+      final safeFileName = fileName.replaceAll(r'\', r'\\').replaceAll('"', r'\"');
 
-      // finalize() must be called before reading headers: in http ^1.2.x it
-      // writes Content-Type (with the generated boundary) into the headers map.
-      // Reading headers first produces a copy without Content-Type, which
-      // causes the server to reject the request as having no files.
-      final body = await multipart.finalize().toBytes();
-      final headers = Map<String, String>.from(multipart.headers)
-        ..remove('content-length')
-        ..['Authorization'] = 'Bearer $authToken';
+      final body = <int>[];
+      void addStr(String s) => body.addAll(utf8.encode(s));
+
+      addStr('--$boundary\r\n');
+      addStr('Content-Disposition: form-data; name="content_type"\r\n\r\n');
+      addStr('$contentType\r\n');
+
+      addStr('--$boundary\r\n');
+      addStr('Content-Disposition: form-data; name="file"; filename="$safeFileName"\r\n');
+      addStr('Content-Type: $mimeType\r\n\r\n');
+      body.addAll(bytes);
+      addStr('\r\n--$boundary--\r\n');
+
+      final headers = <String, String>{
+        'Content-Type': 'multipart/form-data; boundary=$boundary',
+        'Authorization': 'Bearer $authToken',
+      };
 
       final response = await http
           .post(Uri.parse(_uploadUrl), headers: headers, body: body)
