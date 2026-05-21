@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 import 'package:image_picker/image_picker.dart';
@@ -23,10 +24,10 @@ class MediaService {
   ) async {
     final fileName = file.name;
     final contentType = isVideo ? 'video' : 'image';
-    AppLogger.log('Upload started: $fileName ($contentType)');
 
     try {
       final bytes = await file.readAsBytes();
+      AppLogger.log('Upload started: $fileName ($contentType, ${bytes.length} bytes)');
 
       final multipart = http.MultipartRequest('POST', Uri.parse(_uploadUrl));
       multipart.fields['content_type'] = contentType;
@@ -39,9 +40,8 @@ class MediaService {
         ),
       );
 
-      // Buffer the full multipart body before sending to avoid iOS
-      // NSURLSession failures when streaming an async-generator body.
-      // Get headers (content-type with boundary + content-length) and add auth.
+      // MultipartRequest.headers returns a computed copy each call, so we
+      // capture it once and then inject Authorization into that same map.
       final headers = multipart.headers;
       headers['Authorization'] = 'Bearer $authToken';
       final body = await multipart.finalize().toBytes();
@@ -67,6 +67,26 @@ class MediaService {
         message: 'Upload timed out. Please try again.',
       );
     } catch (e) {
+      // On Flutter Web (especially Safari), a CORS preflight failure for a
+      // POST with the Authorization header appears as "Load failed" or
+      // "XMLHttpRequest error." — the server needs:
+      //   Access-Control-Allow-Headers: Authorization, Content-Type
+      //   Access-Control-Allow-Methods: POST, OPTIONS
+      final errorStr = e.toString();
+      final isCors = kIsWeb &&
+          (errorStr.contains('Load failed') ||
+              errorStr.contains('XMLHttpRequest'));
+      if (isCors) {
+        AppLogger.log(
+          'Upload error: CORS blocked — server must allow Authorization header '
+          'for $_uploadUrl (OPTIONS preflight failed)',
+        );
+        return const UploadResult(
+          success: false,
+          message: 'Upload blocked by browser security policy. '
+              'Please try the mobile app or contact support.',
+        );
+      }
       AppLogger.log('Upload error: $fileName — $e');
       return const UploadResult(
         success: false,

@@ -36,6 +36,8 @@ class _MediaScreenState extends State<MediaScreen> {
       final XFile? file = await _picker.pickImage(
         source: source,
         imageQuality: 85,
+        maxWidth: 1920,
+        maxHeight: 1920,
       );
       if (file != null && mounted) {
         setState(() {
