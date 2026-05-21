@@ -30,7 +30,6 @@ class MediaService {
       AppLogger.log('Upload started: $fileName ($contentType, ${bytes.length} bytes)');
 
       final multipart = http.MultipartRequest('POST', Uri.parse(_uploadUrl));
-      multipart.headers['Authorization'] = 'Bearer $authToken';
       multipart.fields['content_type'] = contentType;
       multipart.files.add(
         http.MultipartFile.fromBytes(
@@ -41,8 +40,17 @@ class MediaService {
         ),
       );
 
-      final streamed = await multipart.send().timeout(const Duration(minutes: 5));
-      final response = await http.Response.fromStream(streamed);
+      // MultipartRequest.headers returns a computed copy, so mutations are
+      // discarded. Build headers explicitly using multipart.boundary instead.
+      final body = await multipart.finalize().toBytes();
+      final headers = <String, String>{
+        'Content-Type': 'multipart/form-data; boundary=${multipart.boundary}',
+        'Authorization': 'Bearer $authToken',
+      };
+
+      final response = await http
+          .post(Uri.parse(_uploadUrl), headers: headers, body: body)
+          .timeout(const Duration(minutes: 5));
 
       if (response.statusCode == 200) {
         String? url;
