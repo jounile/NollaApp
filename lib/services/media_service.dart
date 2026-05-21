@@ -20,15 +20,18 @@ class MediaService {
     bool isVideo,
     String authToken,
   ) async {
-    final fileName = file.path.split('/').last;
+    final fileName = file.name;
     final contentType = isVideo ? 'video' : 'image';
     AppLogger.log('Upload started: $fileName ($contentType)');
 
     try {
+      final bytes = await file.readAsBytes();
       final request = http.MultipartRequest('POST', Uri.parse(_uploadUrl));
       request.headers['Authorization'] = 'Bearer $authToken';
       request.fields['content_type'] = contentType;
-      request.files.add(await http.MultipartFile.fromPath('file', file.path));
+      request.files.add(
+        http.MultipartFile.fromBytes('file', bytes, filename: fileName),
+      );
 
       final streamed = await request.send().timeout(const Duration(minutes: 5));
       final response = await http.Response.fromStream(streamed);
