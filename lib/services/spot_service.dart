@@ -5,7 +5,8 @@ import '../models/spot.dart';
 class SpotService {
   static const String _spotsUrl = 'https://nolla.net/api/v1/spots';
 
-  static Future<List<Spot>> fetchSpots({
+  // Returns null on network/API error, empty list when API succeeds but has no spots.
+  static Future<List<Spot>?> fetchSpots({
     double? latitude,
     double? longitude,
     String? authToken,
@@ -38,9 +39,9 @@ class SpotService {
             .map((e) => Spot.fromJson(e as Map<String, dynamic>))
             .toList();
       }
-      return [];
+      return null;
     } catch (_) {
-      return [];
+      return null;
     }
   }
 }

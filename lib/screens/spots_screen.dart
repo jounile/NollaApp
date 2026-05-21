@@ -19,10 +19,15 @@ class SpotsScreen extends StatefulWidget {
 class _SpotsScreenState extends State<SpotsScreen> {
   final MapController _mapController = MapController();
 
-  LatLng? _userLocation;
-  bool _isLoading = true;
+  static const _defaultLocation = LatLng(60.1699, 24.9384);
 
-  // Placeholder nearby spots relative to the user's position
+  LatLng? _userLocation;
+  LatLng _mapCenter = _defaultLocation;
+  bool _isLoading = true;
+  bool _hasApiError = false;
+  bool _showSearchHere = false;
+  bool _useFallbackSpots = true;
+
   final List<_Spot> _spots = [];
 
   @override
@@ -31,11 +36,10 @@ class _SpotsScreenState extends State<SpotsScreen> {
     _determinePosition();
   }
 
-  static const _defaultLocation = LatLng(60.1699, 24.9384); // Helsinki fallback
-
   Future<void> _determinePosition() async {
     setState(() {
       _isLoading = true;
+      _showSearchHere = false;
     });
 
     bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
@@ -69,7 +73,6 @@ class _SpotsScreenState extends State<SpotsScreen> {
       if (!mounted) return;
       _applyPosition(position);
     } on TimeoutException {
-      // GPS couldn't get a fix in time — try last known position, then default
       final last = await Geolocator.getLastKnownPosition();
       if (!mounted) return;
       if (last != null) {
@@ -86,6 +89,7 @@ class _SpotsScreenState extends State<SpotsScreen> {
   void _applyFallback(String message) {
     setState(() {
       _userLocation = _defaultLocation;
+      _mapCenter = _defaultLocation;
     });
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -101,22 +105,33 @@ class _SpotsScreenState extends State<SpotsScreen> {
     final userLatLng = LatLng(position.latitude, position.longitude);
     setState(() {
       _userLocation = userLatLng;
+      _mapCenter = userLatLng;
     });
     _loadSpots(userLatLng);
   }
 
   Future<void> _loadSpots(LatLng center) async {
-    final fetched = await SpotService.fetchSpots(
+    setState(() {
+      _isLoading = true;
+      _hasApiError = false;
+      _showSearchHere = false;
+    });
+
+    final result = await SpotService.fetchSpots(
       latitude: center.latitude,
       longitude: center.longitude,
       authToken: widget.authToken,
     );
+
     if (!mounted) return;
     setState(() {
       _spots.clear();
-      if (fetched.isNotEmpty) {
+      if (result == null) {
+        _hasApiError = true;
+        if (_useFallbackSpots) _spots.addAll(_fallbackSpots(center));
+      } else if (result.isNotEmpty) {
         final distCalc = const Distance();
-        final mapped = fetched.map((s) {
+        final mapped = result.map((s) {
           final spotLatLng = LatLng(s.latitude, s.longitude);
           final distMeters = s.distance ?? distCalc.as(LengthUnit.Meter, center, spotLatLng);
           return _Spot(
@@ -128,11 +143,12 @@ class _SpotsScreenState extends State<SpotsScreen> {
         }).toList()
           ..sort((a, b) => a.distanceMeters.compareTo(b.distanceMeters));
         _spots.addAll(mapped);
-      } else {
+      } else if (_useFallbackSpots) {
         _spots.addAll(_fallbackSpots(center));
       }
       _isLoading = false;
     });
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) _mapController.move(center, 14);
     });
@@ -144,21 +160,25 @@ class _SpotsScreenState extends State<SpotsScreen> {
         name: 'Spot Alpha',
         latLng: LatLng(center.latitude + 0.005, center.longitude + 0.007),
         icon: Icons.terrain,
+        distanceMeters: 690,
       ),
       _Spot(
         name: 'Spot Beta',
         latLng: LatLng(center.latitude - 0.006, center.longitude + 0.003),
         icon: Icons.water,
+        distanceMeters: 735,
       ),
       _Spot(
         name: 'Spot Gamma',
         latLng: LatLng(center.latitude + 0.003, center.longitude - 0.008),
         icon: Icons.park,
+        distanceMeters: 830,
       ),
       _Spot(
         name: 'Spot Delta',
         latLng: LatLng(center.latitude - 0.004, center.longitude - 0.005),
         icon: Icons.place,
+        distanceMeters: 645,
       ),
     ];
   }
@@ -204,13 +224,24 @@ class _SpotsScreenState extends State<SpotsScreen> {
       appBar: AppBar(
         title: const Text('Spots'),
         actions: [
+          IconButton(
+            icon: Icon(_useFallbackSpots ? Icons.layers : Icons.layers_clear),
+            tooltip: _useFallbackSpots ? 'Hide example spots' : 'Show example spots',
+            onPressed: () {
+              setState(() => _useFallbackSpots = !_useFallbackSpots);
+              _loadSpots(_mapCenter);
+            },
+          ),
           if (!_isLoading)
             IconButton(
               icon: const Icon(Icons.my_location),
-              tooltip: 'Center on my location',
+              tooltip: 'Go to my location',
               onPressed: () {
                 if (_userLocation != null) {
-                  _mapController.move(_userLocation!, 14);
+                  setState(() {
+                    _mapCenter = _userLocation!;
+                  });
+                  _loadSpots(_userLocation!);
                 } else {
                   _determinePosition();
                 }
@@ -225,13 +256,20 @@ class _SpotsScreenState extends State<SpotsScreen> {
                 FlutterMap(
                   mapController: _mapController,
                   options: MapOptions(
-                    initialCenter: _userLocation ?? _defaultLocation,
+                    initialCenter: _mapCenter,
                     initialZoom: 14,
+                    onPositionChanged: (camera, hasGesture) {
+                      if (hasGesture) {
+                        setState(() {
+                          _mapCenter = camera.center;
+                          _showSearchHere = true;
+                        });
+                      }
+                    },
                   ),
                   children: [
                     TileLayer(
-                      urlTemplate:
-                          'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                      urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                       userAgentPackageName: 'com.example.nolla_app',
                     ),
                     MarkerLayer(
@@ -245,10 +283,7 @@ class _SpotsScreenState extends State<SpotsScreen> {
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
                                 color: theme.colorScheme.primary,
-                                border: Border.all(
-                                  color: Colors.white,
-                                  width: 3,
-                                ),
+                                border: Border.all(color: Colors.white, width: 3),
                                 boxShadow: [
                                   BoxShadow(
                                     color: theme.colorScheme.primary.withOpacity(0.5),
@@ -256,11 +291,7 @@ class _SpotsScreenState extends State<SpotsScreen> {
                                   ),
                                 ],
                               ),
-                              child: const Icon(
-                                Icons.person,
-                                color: Colors.white,
-                                size: 24,
-                              ),
+                              child: const Icon(Icons.person, color: Colors.white, size: 24),
                             ),
                           ),
                         ..._spots.map(
@@ -270,29 +301,25 @@ class _SpotsScreenState extends State<SpotsScreen> {
                             height: 44,
                             child: GestureDetector(
                               onTap: () => _showSpotInfo(spot),
-                              child: Column(
-                                children: [
-                                  Container(
-                                    width: 36,
-                                    height: 36,
-                                    decoration: BoxDecoration(
-                                      shape: BoxShape.circle,
-                                      color: theme.colorScheme.secondary,
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: Colors.black.withOpacity(0.3),
-                                          blurRadius: 4,
-                                          offset: const Offset(0, 2),
-                                        ),
-                                      ],
+                              child: Container(
+                                width: 36,
+                                height: 36,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: theme.colorScheme.secondary,
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.3),
+                                      blurRadius: 4,
+                                      offset: const Offset(0, 2),
                                     ),
-                                    child: Icon(
-                                      spot.icon,
-                                      color: theme.colorScheme.onSecondary,
-                                      size: 20,
-                                    ),
-                                  ),
-                                ],
+                                  ],
+                                ),
+                                child: Icon(
+                                  spot.icon,
+                                  color: theme.colorScheme.onSecondary,
+                                  size: 20,
+                                ),
                               ),
                             ),
                           ),
@@ -301,32 +328,83 @@ class _SpotsScreenState extends State<SpotsScreen> {
                     ),
                   ],
                 ),
+
+                // "Search this area" button — appears after user pans the map
+                if (_showSearchHere)
+                  Positioned(
+                    top: 16,
+                    left: 0,
+                    right: 0,
+                    child: Center(
+                      child: FilledButton.icon(
+                        icon: const Icon(Icons.search, size: 18),
+                        label: const Text('Search this area'),
+                        onPressed: () => _loadSpots(_mapCenter),
+                      ),
+                    ),
+                  ),
+
+                // Bottom status card — error or spot count
                 Positioned(
                   bottom: 16,
                   left: 16,
                   right: 16,
-                  child: Card(
-                    child: Padding(
-                      padding: const EdgeInsets.all(12),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.location_on,
-                            color: theme.colorScheme.secondary,
-                            size: 16,
-                          ),
-                          const SizedBox(width: 6),
-                          Text(
-                            '${_spots.length} spots nearby',
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                              fontWeight: FontWeight.w500,
+                  child: _hasApiError
+                      ? Card(
+                          color: theme.colorScheme.errorContainer,
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.error_outline,
+                                  color: theme.colorScheme.onErrorContainer,
+                                  size: 18,
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    'Failed to load spots',
+                                    style: theme.textTheme.bodyMedium?.copyWith(
+                                      color: theme.colorScheme.onErrorContainer,
+                                    ),
+                                  ),
+                                ),
+                                TextButton(
+                                  onPressed: () => _loadSpots(_mapCenter),
+                                  child: Text(
+                                    'Retry',
+                                    style: TextStyle(color: theme.colorScheme.onErrorContainer),
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
-                        ],
-                      ),
-                    ),
-                  ),
+                        )
+                      : Card(
+                          child: Padding(
+                            padding: const EdgeInsets.all(12),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.location_on,
+                                  color: theme.colorScheme.secondary,
+                                  size: 16,
+                                ),
+                                const SizedBox(width: 6),
+                                Text(
+                                  _spots.isEmpty
+                                      ? 'No spots in this area'
+                                      : '${_spots.length} spots nearby',
+                                  style: theme.textTheme.bodyMedium?.copyWith(
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
                 ),
               ],
             ),
