@@ -21,6 +21,10 @@ jobs:
         with:
           fetch-depth: 1
 
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
       - name: Run Claude Code Agent
         uses: anthropics/claude-code-action@beta
         with:
