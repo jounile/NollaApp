@@ -29,7 +29,7 @@ jobs:
 
       - name: Add Flutter to PATH
         shell: cmd
-        run: echo C:\flutter\bin>>"%GITHUB_PATH%"
+        run: echo C:\\flutter\bin>>"%GITHUB_PATH%"
 
       - name: Get dependencies
         shell: cmd
