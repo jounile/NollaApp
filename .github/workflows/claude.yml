@@ -30,6 +30,9 @@ jobs:
             irm bun.sh/install.ps1 | iex
           }
           Add-Content -Path $env:GITHUB_PATH -Value "C:\bun\bin"
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
 
       - name: Run Claude Code Agent
         uses: anthropics/claude-code-action@beta
