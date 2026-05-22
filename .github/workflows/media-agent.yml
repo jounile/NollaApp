@@ -1,0 +1,74 @@
+name: Media Agent
+
+on:
+  issues:
+    types: [labeled, opened, reopened]
+  workflow_dispatch:
+    inputs:
+      issue_number:
+        description: 'Issue number to process'
+        required: true
+        type: number
+
+jobs:
+  media-agent:
+    name: Implement Media Issue
+    runs-on: ubuntu-latest
+    if: |
+      (github.event_name == 'issues' && contains(github.event.issue.labels.*.name, 'Media')) ||
+      github.event_name == 'workflow_dispatch'
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.22.0'
+          channel: stable
+          cache: true
+
+      - name: Get dependencies
+        run: flutter pub get
+
+      - name: Run Claude Code media agent
+        uses: anthropics/claude-code-action@beta
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          trigger_phrase: ""
+          assignee_trigger: ""
+          direct_prompt: |
+            You are the NollaApp media agent. Your job is to implement GitHub issues labelled "Media" that relate to the media upload feature.
+
+            ## Context
+
+            This is a Flutter mobile app for the nolla.net community platform. The relevant files for media upload are:
+            - `lib/screens/media_screen.dart` — main UI (grid of selected media, FAB to pick, per-item status overlay)
+            - `lib/services/media_service.dart` — `MediaService.uploadFile()` posts to `https://nolla.net/media/api/upload` (multipart, 5-min timeout)
+            - `lib/services/app_logger.dart` — in-app ring-buffer logger (use instead of print)
+
+            Architecture rules:
+            - No external state management — use `StatefulWidget` + `setState()` only.
+            - Add new services under `lib/services/`, new models under `lib/models/`.
+            - Use `AppLogger` for all log output; never use `print()`.
+            - Run `flutter analyze` and `flutter test` before finishing; fix any issues.
+
+            ## Your task
+
+            ${{ github.event_name == 'workflow_dispatch' && format('Process issue #{0} from this repository.', github.event.inputs.issue_number) || format('Implement issue #{0}: {1}\n\nIssue body:\n{2}', github.event.issue.number, github.event.issue.title, github.event.issue.body) }}
+
+            ## Steps
+
+            1. Read the issue carefully and understand what needs to be implemented on the media upload page.
+            2. Implement the requested changes in the relevant files (primarily `lib/screens/media_screen.dart` and `lib/services/media_service.dart`).
+            3. Run `flutter analyze` and fix any lint errors.
+            4. Run `flutter test` and fix any test failures.
+            5. Commit your changes to a new branch named `media-agent/issue-${{ github.event_name == 'workflow_dispatch' && github.event.inputs.issue_number || github.event.issue.number }}`.
+            6. Open a pull request targeting `main` with a clear description of what was implemented.
+            7. Comment on the issue linking to the PR.
