@@ -37,7 +37,7 @@ jobs:
         run: flutter test
 
       - name: Build debug APK
-        run: flutter build apk --debug --dart-define=BRANCH_NAME=${{ github.head_ref || github.ref_name }}
+        run: flutter build apk --debug --dart-define=BRANCH_NAME=${{ github.head_ref || github.ref_name }} --dart-define=TEST_USERNAME=${{ secrets.TEST_USERNAME }} --dart-define=TEST_PASSWORD=${{ secrets.TEST_PASSWORD }}
 
       - name: Upload APK artifact
         id: upload_apk
@@ -119,11 +119,11 @@ jobs:
 
       - name: Build web (main)
         if: github.event_name != 'pull_request'
-        run: flutter build web --release --base-href /NollaApp/ --dart-define=BRANCH_NAME=${{ github.ref_name }}
+        run: flutter build web --release --base-href /NollaApp/ --dart-define=BRANCH_NAME=${{ github.ref_name }} --dart-define=TEST_USERNAME=${{ secrets.TEST_USERNAME }} --dart-define=TEST_PASSWORD=${{ secrets.TEST_PASSWORD }}
 
       - name: Build web (PR preview)
         if: github.event_name == 'pull_request'
-        run: flutter build web --release --base-href /NollaApp/pr-${{ github.event.pull_request.number }}/ --dart-define=BRANCH_NAME=${{ github.head_ref }}
+        run: flutter build web --release --base-href /NollaApp/pr-${{ github.event.pull_request.number }}/ --dart-define=BRANCH_NAME=${{ github.head_ref }} --dart-define=TEST_USERNAME=${{ secrets.TEST_USERNAME }} --dart-define=TEST_PASSWORD=${{ secrets.TEST_PASSWORD }}
 
       - name: Deploy to GitHub Pages (main)
         if: github.event_name != 'pull_request'
@@ -223,7 +223,7 @@ jobs:
           flutter create --platforms=ios --org com.example --project-name nolla_app .
 
       - name: Build iOS simulator
-        run: flutter build ios --simulator --debug --dart-define=BRANCH_NAME=${{ github.head_ref || github.ref_name }}
+        run: flutter build ios --simulator --debug --dart-define=BRANCH_NAME=${{ github.head_ref || github.ref_name }} --dart-define=TEST_USERNAME=${{ secrets.TEST_USERNAME }} --dart-define=TEST_PASSWORD=${{ secrets.TEST_PASSWORD }}
 
       - name: Archive iOS simulator build
         run: |
