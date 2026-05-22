@@ -45,5 +45,15 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>NollaApp needs your location to show spots near you on the map.</string>
+	<key>NSLocationAlwaysUsageDescription</key>
+	<string>NollaApp needs your location to show spots near you on the map.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>NollaApp needs access to your photo library so you can share media with the community.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>NollaApp needs camera access so you can take photos and videos to share.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>NollaApp needs microphone access to record videos.</string>
 </dict>
 </plist>
