@@ -1,42 +1,42 @@
-name: Claude Code Agent
-
-on:
-  issues:
-    types: [labeled]
-  issue_comment:
-    types: [created]
-
-jobs:
-  implement:
-    if: |
-      (github.event_name == 'issues' && github.event.label.name == 'claude') ||
-      (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude'))
-    runs-on: self-hosted
-    permissions:
-      contents: write
-      pull-requests: write
-      issues: write
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 1
-
-      - name: Install Bun to path without spaces (Windows)
-        if: runner.os == 'Windows'
-        shell: powershell
-        run: |
-          $env:BUN_INSTALL = "C:\bun"
-          if (-not (Get-Command bun -ErrorAction SilentlyContinue)) {
-            irm bun.sh/install.ps1 | iex
-          }
-          Add-Content -Path $env:GITHUB_PATH -Value "C:\bun\bin"
-          Add-Content -Path $env:GITHUB_ENV -Value "BUN_INSTALL=C:\bun"
-      - uses: oven-sh/setup-bun@v2
-        if: runner.os != 'Windows'
-        with:
-          bun-version: latest
-
-      - name: Run Claude Code Agent
-        uses: anthropics/claude-code-action@beta
-        with:
-          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+# name: Claude Code Agent
+#
+# on:
+#   issues:
+#     types: [labeled]
+#   issue_comment:
+#     types: [created]
+#
+# jobs:
+#   implement:
+#     if: |
+#       (github.event_name == 'issues' && github.event.label.name == 'claude') ||
+#       (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude'))
+#     runs-on: self-hosted
+#     permissions:
+#       contents: write
+#       pull-requests: write
+#       issues: write
+#     steps:
+#       - uses: actions/checkout@v4
+#         with:
+#           fetch-depth: 1
+#
+#       - name: Install Bun to path without spaces (Windows)
+#         if: runner.os == 'Windows'
+#         shell: powershell
+#         run: |
+#           $env:BUN_INSTALL = "C:\bun"
+#           if (-not (Get-Command bun -ErrorAction SilentlyContinue)) {
+#             irm bun.sh/install.ps1 | iex
+#           }
+#           Add-Content -Path $env:GITHUB_PATH -Value "C:\bun\bin"
+#           Add-Content -Path $env:GITHUB_ENV -Value "BUN_INSTALL=C:\bun"
+#       - uses: oven-sh/setup-bun@v2
+#         if: runner.os != 'Windows'
+#         with:
+#           bun-version: latest
+#
+#       - name: Run Claude Code Agent
+#         uses: anthropics/claude-code-action@beta
+#         with:
+#           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
