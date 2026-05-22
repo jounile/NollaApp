@@ -32,6 +32,7 @@ jobs:
           Add-Content -Path $env:GITHUB_PATH -Value "C:\bun\bin"
           Add-Content -Path $env:GITHUB_ENV -Value "BUN_INSTALL=C:\bun"
       - uses: oven-sh/setup-bun@v2
+        if: runner.os != 'Windows'
         with:
           bun-version: latest
 
