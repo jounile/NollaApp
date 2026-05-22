@@ -102,6 +102,9 @@ jobs:
     permissions:
       contents: write
       pull-requests: write
+    environment:
+      name: github-pages
+      url: ${{ github.event_name == 'pull_request' && format('https://{0}.github.io/NollaApp/pr-{1}/', github.repository_owner, github.event.pull_request.number) || format('https://{0}.github.io/NollaApp/', github.repository_owner) }}
     steps:
       - uses: actions/checkout@v4
 
