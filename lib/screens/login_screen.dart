@@ -3,6 +3,8 @@ import '../services/auth_service.dart';
 import 'main_screen.dart';
 
 const String _kBranch = String.fromEnvironment('BRANCH_NAME');
+const String _kTestUsername = String.fromEnvironment('TEST_USERNAME');
+const String _kTestPassword = String.fromEnvironment('TEST_PASSWORD');
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -13,8 +15,8 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _usernameController = TextEditingController(text: 'testaaja1');
-  final _passwordController = TextEditingController(text: 'testaaja1');
+  final _usernameController = TextEditingController(text: _kTestUsername);
+  final _passwordController = TextEditingController(text: _kTestPassword);
   final _authService = AuthService();
 
   bool _isLoading = false;
