@@ -22,6 +22,7 @@ jobs:
           fetch-depth: 1
 
       - name: Install Bun to path without spaces (Windows)
+        if: runner.os == 'Windows'
         shell: pwsh
         env:
           BUN_INSTALL: C:\bun
