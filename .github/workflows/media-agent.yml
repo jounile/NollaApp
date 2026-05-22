@@ -26,14 +26,32 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Add Flutter to PATH
+        run: |
+          # Flutter lives in Git Bash's PATH but not in the Windows system PATH.
+          # Find bash.exe, ask it where flutter is, then convert the POSIX path to
+          # a Windows path and write it to GITHUB_PATH for all subsequent steps.
+          $gitBash = @(
+            'C:\Program Files\Git\bin\bash.exe',
+            'C:\Program Files (x86)\Git\bin\bash.exe'
+          ) | Where-Object { Test-Path $_ } | Select-Object -First 1
+          if (-not $gitBash) {
+            $gitBash = (Get-Command bash -ErrorAction SilentlyContinue)?.Source
+          }
+          if (-not $gitBash) { throw 'Git Bash not found on this runner' }
+
+          $posixPath = (& $gitBash -c 'which flutter 2>/dev/null').Trim()
+          if (-not $posixPath) { throw 'flutter not found in Git Bash PATH' }
+
+          # /c/Users/... -> C:\Users\...
+          $winPath = $posixPath -replace '^/([a-zA-Z])/', '$1:/' -replace '/', '\'
+          $winDir  = Split-Path $winPath
+          Write-Host "Adding Flutter to PATH: $winDir"
+          $winDir | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+        shell: pwsh
+
       - name: Get dependencies
         run: flutter pub get
-
-      - name: Export Flutter to PATH
-        run: |
-          $flutterBin = Split-Path (Get-Command flutter).Source
-          "$flutterBin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
-        shell: pwsh
 
       - name: Run Claude Code media agent
         uses: anthropics/claude-code-action@beta
