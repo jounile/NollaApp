@@ -24,13 +24,13 @@ jobs:
       - name: Install Bun to path without spaces (Windows)
         if: runner.os == 'Windows'
         shell: powershell
-        env:
-          BUN_INSTALL: C:\bun
         run: |
+          $env:BUN_INSTALL = "C:\bun"
           if (-not (Get-Command bun -ErrorAction SilentlyContinue)) {
             irm bun.sh/install.ps1 | iex
           }
           Add-Content -Path $env:GITHUB_PATH -Value "C:\bun\bin"
+          Add-Content -Path $env:GITHUB_ENV -Value "BUN_INSTALL=C:\bun"
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
