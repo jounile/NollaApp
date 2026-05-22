@@ -33,6 +33,9 @@ jobs:
       - name: Get dependencies
         run: flutter pub get
 
+      - name: Export Flutter to PATH
+        run: echo "$(dirname $(which flutter))" >> $GITHUB_PATH
+
       - name: Run Claude Code media agent
         uses: anthropics/claude-code-action@beta
         with:
@@ -40,6 +43,7 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           trigger_phrase: ""
           assignee_trigger: ""
+          max_turns: 30
           direct_prompt: |
             You are the NollaApp media agent. Your job is to implement GitHub issues labelled "Media" that relate to the media upload feature.
 
@@ -58,7 +62,10 @@ jobs:
 
             ## Your task
 
-            ${{ github.event_name == 'workflow_dispatch' && format('Process issue #{0} from this repository.', github.event.inputs.issue_number) || format('Implement issue #{0}: {1}\n\nIssue body:\n{2}', github.event.issue.number, github.event.issue.title, github.event.issue.body) }}
+            ${{ github.event_name == 'workflow_dispatch' && format('Look up and implement issue #{0} from this repository.', github.event.inputs.issue_number) || '' }}
+            ${{ github.event_name == 'issues' && format('Implement issue #{0}: {1}', github.event.issue.number, github.event.issue.title) || '' }}
+
+            ${{ github.event.issue.body }}
 
             ## Steps
 
