@@ -21,9 +21,15 @@ jobs:
         with:
           fetch-depth: 1
 
-      - uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: latest
+      - name: Install Bun to path without spaces (Windows)
+        shell: pwsh
+        env:
+          BUN_INSTALL: C:\bun
+        run: |
+          if (-not (Get-Command bun -ErrorAction SilentlyContinue)) {
+            irm bun.sh/install.ps1 | iex
+          }
+          Add-Content -Path $env:GITHUB_PATH -Value "C:\bun\bin"
 
       - name: Run Claude Code Agent
         uses: anthropics/claude-code-action@beta
