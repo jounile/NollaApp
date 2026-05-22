@@ -12,7 +12,7 @@ jobs:
   build-android:
     name: Build Android APK
     runs-on: ubuntu-latest
-    if: github.event.action != 'closed'
+    if: false  # disabled to save Actions quota; re-enable: github.event.action != 'closed'
     permissions:
       contents: write
       pull-requests: write
@@ -204,7 +204,7 @@ jobs:
   build-ios:
     name: Build iOS (simulator)
     runs-on: macos-latest
-    if: github.event.action != 'closed'
+    if: false  # disabled to save Actions quota; re-enable: github.event.action != 'closed'
     steps:
       - uses: actions/checkout@v4
 
