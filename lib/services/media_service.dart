@@ -55,9 +55,13 @@ class MediaService {
         final data = jsonDecode(response.body) as Map<String, dynamic>;
         // URL comes from files[0].blob_path, not a top-level 'url' field.
         final files = data['files'] as List<dynamic>?;
-        final blobPath = files?.isNotEmpty == true
-            ? (files!.first as Map<String, dynamic>?)?['blob_path'] as String?
-            : null;
+        String? blobPath;
+        if (files != null && files.isNotEmpty) {
+          final first = files.first;
+          if (first is Map<String, dynamic>) {
+            blobPath = first['blob_path'] as String?;
+          }
+        }
         final partial = response.statusCode == 207;
         AppLogger.log('Upload ${partial ? "partial " : ""}succeeded: $fileName → $blobPath');
         return UploadResult(
