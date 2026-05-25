@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'home_screen.dart';
 import 'spots_screen.dart';
 import 'media_screen.dart';
+import 'profile_screen.dart';
 import 'login_screen.dart';
+import '../services/session_service.dart';
 
 class MainScreen extends StatefulWidget {
   final String username;
@@ -21,10 +23,11 @@ class _MainScreenState extends State<MainScreen> {
     HomeScreen(username: widget.username),
     SpotsScreen(authToken: widget.authToken),
     MediaScreen(authToken: widget.authToken),
+    ProfileScreen(username: widget.username, authToken: widget.authToken),
   ];
 
   void _onItemTapped(int index) {
-    if (index == 3) {
+    if (index == 4) {
       _confirmLogout();
       return;
     }
@@ -43,8 +46,10 @@ class _MainScreenState extends State<MainScreen> {
             child: const Text('Cancel'),
           ),
           FilledButton(
-            onPressed: () {
+            onPressed: () async {
               Navigator.pop(ctx);
+              await SessionService.clear();
+              if (!context.mounted) return;
               Navigator.of(context).pushAndRemoveUntil(
                 MaterialPageRoute<void>(
                   builder: (_) => const LoginScreen(),
@@ -84,6 +89,11 @@ class _MainScreenState extends State<MainScreen> {
             icon: Icon(Icons.perm_media_outlined),
             selectedIcon: Icon(Icons.perm_media),
             label: 'Media',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.person_outline),
+            selectedIcon: Icon(Icons.person),
+            label: 'Profile',
           ),
           NavigationDestination(
             icon: Icon(Icons.logout),

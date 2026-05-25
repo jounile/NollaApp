@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
+import '../services/session_service.dart';
 import 'main_screen.dart';
 
 const String _kBranch = String.fromEnvironment('BRANCH_NAME');
@@ -48,12 +49,13 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() => _isLoading = false);
 
     if (result.success) {
+      final username = _usernameController.text.trim();
+      final token = result.token ?? '';
+      await SessionService.save(username, token);
+      if (!mounted) return;
       Navigator.of(context).pushReplacement(
         MaterialPageRoute<void>(
-          builder: (_) => MainScreen(
-            username: _usernameController.text.trim(),
-            authToken: result.token ?? '',
-          ),
+          builder: (_) => MainScreen(username: username, authToken: token),
         ),
       );
     } else {

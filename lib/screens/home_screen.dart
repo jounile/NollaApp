@@ -18,8 +18,6 @@ class HomeScreen extends StatelessWidget {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                _NollaLogo(size: 120),
-                const SizedBox(height: 32),
                 Text(
                   'nolla.net',
                   style: theme.textTheme.headlineLarge?.copyWith(
@@ -30,7 +28,7 @@ class HomeScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Community Platform',
+                  'Skateboarding Community',
                   style: theme.textTheme.bodyMedium?.copyWith(
                     color: theme.colorScheme.onSurfaceVariant,
                     letterSpacing: 1,
@@ -86,43 +84,6 @@ class HomeScreen extends StatelessWidget {
                 ),
               ],
             ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _NollaLogo extends StatelessWidget {
-  final double size;
-
-  const _NollaLogo({required this.size});
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: theme.colorScheme.primary,
-        boxShadow: [
-          BoxShadow(
-            color: theme.colorScheme.primary.withOpacity(0.4),
-            blurRadius: 24,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Center(
-        child: Text(
-          '0',
-          style: TextStyle(
-            fontSize: size * 0.55,
-            fontWeight: FontWeight.bold,
-            color: theme.colorScheme.onPrimary,
-            height: 1,
           ),
         ),
       ),

@@ -393,79 +393,45 @@ class _SpotsScreenState extends State<SpotsScreen> {
                   ],
                 ),
 
-                // Bottom status card — error, fetching, empty, or spot count
-                Positioned(
-                  bottom: 16,
-                  left: 16,
-                  right: 16,
-                  child: _hasApiError
-                      ? Card(
-                          color: theme.colorScheme.errorContainer,
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                            child: Row(
-                              children: [
-                                Icon(
-                                  Icons.wifi_off,
+                if (_hasApiError)
+                  Positioned(
+                    bottom: 16,
+                    left: 16,
+                    right: 16,
+                    child: Card(
+                      color: theme.colorScheme.errorContainer,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.wifi_off,
+                              color: theme.colorScheme.onErrorContainer,
+                              size: 18,
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                kIsWeb
+                                    ? 'CORS error — API must allow web requests'
+                                    : 'Failed to load spots',
+                                style: theme.textTheme.bodyMedium?.copyWith(
                                   color: theme.colorScheme.onErrorContainer,
-                                  size: 18,
                                 ),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: Text(
-                                    kIsWeb
-                                        ? 'CORS error — API must allow web requests'
-                                        : 'Failed to load spots',
-                                    style: theme.textTheme.bodyMedium?.copyWith(
-                                      color: theme.colorScheme.onErrorContainer,
-                                    ),
-                                  ),
-                                ),
-                                TextButton(
-                                  onPressed: () => _loadSpots(_mapCenter),
-                                  child: Text(
-                                    'Retry',
-                                    style: TextStyle(color: theme.colorScheme.onErrorContainer),
-                                  ),
-                                ),
-                              ],
+                              ),
                             ),
-                          ),
-                        )
-                      : Card(
-                          child: Padding(
-                            padding: const EdgeInsets.all(12),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                if (_isFetchingSpots)
-                                  const SizedBox(
-                                    width: 14,
-                                    height: 14,
-                                    child: CircularProgressIndicator(strokeWidth: 2),
-                                  )
-                                else
-                                  Icon(
-                                    Icons.location_on,
-                                    color: theme.colorScheme.secondary,
-                                    size: 16,
-                                  ),
-                                const SizedBox(width: 6),
-                                Text(
-                                  _isFetchingSpots
-                                      ? 'Searching for spots...'
-                                      : _spots.isEmpty
-                                          ? 'No spots found in this area'
-                                          : '${_spots.length} spots nearby',
-                                  style: theme.textTheme.bodyMedium?.copyWith(
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ],
+                            TextButton(
+                              onPressed: () => _loadSpots(_mapCenter),
+                              child: Text(
+                                'Retry',
+                                style: TextStyle(color: theme.colorScheme.onErrorContainer),
+                              ),
                             ),
-                          ),
+                          ],
                         ),
-                ),
+                      ),
+                    ),
+                  ),
               ],
             ),
     );
