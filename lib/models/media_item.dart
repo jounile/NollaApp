@@ -56,7 +56,8 @@ class MediaItem {
           uploader['name'] as String? ??
           uploaderUsername;
     } else {
-      uploaderUsername = json['username'] as String? ?? json['uploader_username'] as String? ?? '';
+      // API uses 'owner' as a plain username string
+      uploaderUsername = json['owner'] as String? ?? json['username'] as String? ?? json['uploader_username'] as String? ?? '';
       uploaderDisplayName = json['display_name'] as String? ?? json['uploader_name'] as String? ?? uploaderUsername;
     }
 
@@ -75,7 +76,8 @@ class MediaItem {
       id: (json['id'] as num?)?.toInt() ?? 0,
       url: json['url'] as String? ?? json['file_url'] as String? ?? '',
       thumbnailUrl: json['thumbnail_url'] as String? ?? json['thumbnail'] as String?,
-      mediaType: json['media_type'] as String? ?? json['type'] as String? ?? 'photo',
+      // API uses mediatype_id: 1=image/photo, 2=video
+      mediaType: json['media_type'] as String? ?? json['type'] as String? ?? _mediaTypeFromId(json['mediatype_id']),
       uploaderUsername: uploaderUsername,
       uploaderDisplayName: uploaderDisplayName,
       spotId: spotId,
@@ -86,5 +88,11 @@ class MediaItem {
       isLikedByMe: json['is_liked_by_me'] as bool? ?? json['liked'] as bool? ?? false,
       createdAt: json['created_at'] as String? ?? json['createdAt'] as String?,
     );
+  }
+
+  static String _mediaTypeFromId(dynamic id) {
+    if (id == null) return 'photo';
+    final n = id is num ? id.toInt() : int.tryParse(id.toString());
+    return n == 2 ? 'video' : 'photo';
   }
 }

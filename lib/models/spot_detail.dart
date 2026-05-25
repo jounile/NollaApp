@@ -70,9 +70,12 @@ class SpotDetail {
       latitude: lat ?? 0.0,
       longitude: lon ?? 0.0,
       type: json['type'] as String? ?? 'place',
-      distance: _toDouble(json['distance']),
-      description: json['description'] as String?,
-      address: json['address'] as String?,
+      // distance_km in km → metres; fall back to distance if present
+      distance: _distanceMeters(json),
+      // API uses 'info' as the description field
+      description: json['info'] as String? ?? json['description'] as String?,
+      // API uses 'map_link' (a Google Maps URL); fall back to address
+      address: json['map_link'] as String? ?? json['address'] as String?,
       createdBy: json['created_by'] as String? ?? json['createdBy'] as String? ?? json['author'] as String?,
       mediaUrls: mediaUrls,
       tags: tags,
@@ -84,5 +87,11 @@ class SpotDetail {
     if (v is num) return v.toDouble();
     if (v is String) return double.tryParse(v);
     return null;
+  }
+
+  static double? _distanceMeters(Map<String, dynamic> json) {
+    final km = _toDouble(json['distance_km']);
+    if (km != null) return km * 1000;
+    return _toDouble(json['distance']);
   }
 }

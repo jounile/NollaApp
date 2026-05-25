@@ -29,7 +29,7 @@ class FeedService {
     try {
       final uri = Uri.parse(_mediaUrl).replace(queryParameters: {
         'page': page.toString(),
-        'limit': limit.toString(),
+        'per_page': limit.toString(),
       });
       AppLogger.log('[FeedService] GET $uri');
       final response = await http.get(uri, headers: _headers(authToken)).timeout(const Duration(seconds: 10));
@@ -43,8 +43,15 @@ class FeedService {
         } else if (body is Map<String, dynamic>) {
           final raw = body['media'] ?? body['items'] ?? body['data'] ?? body['results'];
           list = raw is List ? raw : [];
-          final total = (body['total'] as num?)?.toInt();
-          if (total != null) hasMore = page * limit < total;
+          // API wraps pagination info in a 'meta' object: {page, per_page, total, pages}
+          final meta = body['meta'] as Map<String, dynamic>?;
+          final total = (meta?['total'] as num?)?.toInt() ?? (body['total'] as num?)?.toInt();
+          final pages = (meta?['pages'] as num?)?.toInt();
+          if (pages != null) {
+            hasMore = page < pages;
+          } else if (total != null) {
+            hasMore = page * limit < total;
+          }
           hasMore = hasMore || (body['has_more'] as bool? ?? body['hasMore'] as bool? ?? false);
         } else {
           return const FeedResult(success: true);

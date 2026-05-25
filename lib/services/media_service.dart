@@ -15,7 +15,7 @@ class UploadResult {
 }
 
 class MediaService {
-  static const String _uploadUrl = 'https://nolla.net/media/api/upload';
+  static const String _uploadUrl = 'https://nolla.net/api/v1/media/upload';
 
   Future<UploadResult> uploadFile(
     XFile file,
@@ -33,7 +33,7 @@ class MediaService {
       multipart.fields['content_type'] = contentType;
       multipart.files.add(
         http.MultipartFile.fromBytes(
-          'file',
+          'files',
           bytes,
           filename: fileName,
           contentType: MediaType.parse(_mimeType(fileName, isVideo)),
@@ -50,14 +50,24 @@ class MediaService {
           .post(Uri.parse(_uploadUrl), headers: headers, body: body)
           .timeout(const Duration(minutes: 5));
 
-      if (response.statusCode == 200) {
+      // API returns 200 (all ok) or 207 (partial success); both count as success.
+      if (response.statusCode == 200 || response.statusCode == 207) {
         final data = jsonDecode(response.body) as Map<String, dynamic>;
-        final url = data['url'] as String?;
-        AppLogger.log('Upload succeeded: $fileName → $url');
-        return UploadResult(success: true, message: 'Uploaded', url: url);
+        // URL comes from files[0].blob_path, not a top-level 'url' field.
+        final files = data['files'] as List<dynamic>?;
+        final blobPath = files?.isNotEmpty == true
+            ? (files!.first as Map<String, dynamic>?)?['blob_path'] as String?
+            : null;
+        final partial = response.statusCode == 207;
+        AppLogger.log('Upload ${partial ? "partial " : ""}succeeded: $fileName → $blobPath');
+        return UploadResult(
+          success: true,
+          message: partial ? 'Partially uploaded' : 'Uploaded',
+          url: blobPath,
+        );
       }
       final data = jsonDecode(response.body) as Map<String, dynamic>? ?? {};
-      final message = data['message'] as String? ?? 'Upload failed';
+      final message = data['message'] as String? ?? data['status'] as String? ?? 'Upload failed';
       AppLogger.log('Upload failed: $fileName — HTTP ${response.statusCode}: $message');
       return UploadResult(success: false, message: message);
     } on TimeoutException {
