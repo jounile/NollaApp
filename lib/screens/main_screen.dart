@@ -23,7 +23,7 @@ class _MainScreenState extends State<MainScreen> {
     HomeScreen(username: widget.username),
     SpotsScreen(authToken: widget.authToken),
     MediaScreen(authToken: widget.authToken),
-    ProfileScreen(username: widget.username),
+    ProfileScreen(username: widget.username, authToken: widget.authToken),
   ];
 
   void _onItemTapped(int index) {
