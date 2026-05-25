@@ -4,6 +4,7 @@ import 'spots_screen.dart';
 import 'media_screen.dart';
 import 'profile_screen.dart';
 import 'login_screen.dart';
+import '../services/session_service.dart';
 
 class MainScreen extends StatefulWidget {
   final String username;
@@ -45,8 +46,10 @@ class _MainScreenState extends State<MainScreen> {
             child: const Text('Cancel'),
           ),
           FilledButton(
-            onPressed: () {
+            onPressed: () async {
               Navigator.pop(ctx);
+              await SessionService.clear();
+              if (!context.mounted) return;
               Navigator.of(context).pushAndRemoveUntil(
                 MaterialPageRoute<void>(
                   builder: (_) => const LoginScreen(),
