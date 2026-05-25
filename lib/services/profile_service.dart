@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../models/profile.dart';
 import '../models/public_profile.dart';
@@ -51,12 +52,20 @@ class ProfileService {
         return ProfileResult(success: true, profile: Profile.fromJson(data));
       } else if (response.statusCode == 401) {
         return const ProfileResult(success: false, message: 'Session expired — please log in again');
+      } else if (response.statusCode == 404) {
+        return const ProfileResult(success: false, message: 'Profile endpoint not found — API may not support this yet');
       } else {
         return ProfileResult(success: false, message: 'Failed to load profile (${response.statusCode})');
       }
     } catch (e) {
       AppLogger.log('[ProfileService] exception: $e');
-      return ProfileResult(success: false, message: 'Network error. Please check your connection.');
+      final isCors = kIsWeb && e.toString().contains('XMLHttpRequest');
+      return ProfileResult(
+        success: false,
+        message: isCors
+            ? 'Cannot load profile on web — server CORS policy blocks this request'
+            : 'Network error. Please check your connection.',
+      );
     }
   }
 
@@ -91,7 +100,13 @@ class ProfileService {
       }
     } catch (e) {
       AppLogger.log('[ProfileService] exception: $e');
-      return ProfileResult(success: false, message: 'Network error. Please check your connection.');
+      final isCors = kIsWeb && e.toString().contains('XMLHttpRequest');
+      return ProfileResult(
+        success: false,
+        message: isCors
+            ? 'Cannot save profile on web — server CORS policy blocks this request'
+            : 'Network error. Please check your connection.',
+      );
     }
   }
 
