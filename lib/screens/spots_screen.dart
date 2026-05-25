@@ -456,7 +456,7 @@ class _SpotsScreenState extends State<SpotsScreen> {
                                       ? 'Searching for spots...'
                                       : _spots.isEmpty
                                           ? 'No spots found in this area'
-                                          : '${_spots.length} spots nearby',
+                                          : '${_spots.length} spots',
                                   style: theme.textTheme.bodyMedium?.copyWith(
                                     fontWeight: FontWeight.w500,
                                   ),
