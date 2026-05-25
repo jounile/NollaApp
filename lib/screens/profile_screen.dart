@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/profile.dart';
+import '../services/app_logger.dart';
 import '../services/profile_service.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -118,6 +119,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
       appBar: AppBar(
         title: const Text('Profile'),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.terminal),
+            tooltip: 'View logs',
+            onPressed: () => showLogViewer(context, filter: const ['[ProfileService]']),
+          ),
           if (_loading || _saving)
             const Padding(
               padding: EdgeInsets.symmetric(horizontal: 16),

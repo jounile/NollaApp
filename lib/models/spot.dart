@@ -57,8 +57,15 @@ class Spot {
       latitude: lat ?? 0.0,
       longitude: lon ?? 0.0,
       type: json['type'] as String? ?? 'place',
-      distance: _toDouble(json['distance']),
+      // API returns distance_km in kilometres; convert to metres for display.
+      distance: _distanceMeters(json),
     );
+  }
+
+  static double? _distanceMeters(Map<String, dynamic> json) {
+    final km = _toDouble(json['distance_km']);
+    if (km != null) return km * 1000;
+    return _toDouble(json['distance']);
   }
 
   static double? _toDouble(dynamic value) {

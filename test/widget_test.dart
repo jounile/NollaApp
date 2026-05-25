@@ -4,7 +4,7 @@ import 'package:nolla_app/main.dart';
 
 void main() {
   testWidgets('App renders login screen', (WidgetTester tester) async {
-    await tester.pumpWidget(const NollaApp());
+    await tester.pumpWidget(const NollaApp(session: null));
 
     expect(find.text('Sign in to NollaApp'), findsOneWidget);
     expect(find.text('Username'), findsOneWidget);
