@@ -101,14 +101,12 @@ jobs:
     runs-on: ubuntu-latest
     if: >
       (github.event_name == 'push') ||
-      (github.event_name == 'pull_request' && github.event.action != 'closed') ||
       (github.event_name == 'workflow_dispatch')
     concurrency:
       group: web-preview-${{ github.ref }}
       cancel-in-progress: true
     permissions:
       contents: write
-      pull-requests: write
     steps:
       - uses: actions/checkout@v4
 
@@ -125,36 +123,31 @@ jobs:
         run: flutter create --platforms=web --org com.example --project-name nolla_app .
 
       - name: Build web (main)
-        if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
         run: flutter build web --release --base-href /NollaApp/ --dart-define=BRANCH_NAME=${{ github.ref_name }} --dart-define=TEST_USERNAME=${{ secrets.TEST_USERNAME }} --dart-define=TEST_PASSWORD=${{ secrets.TEST_PASSWORD }}
 
       - name: Compute branch slug
-        if: github.event_name == 'push' && github.ref != 'refs/heads/main' && github.ref != 'refs/heads/master'
+        if: github.ref != 'refs/heads/main' && github.ref != 'refs/heads/master'
         run: |
           SLUG=$(echo "${{ github.ref_name }}" | sed 's/[^a-zA-Z0-9._-]/-/g' | cut -c1-50)
           echo "BRANCH_SLUG=${SLUG}" >> $GITHUB_ENV
 
       - name: Build web (branch preview)
-        if: github.event_name == 'push' && github.ref != 'refs/heads/main' && github.ref != 'refs/heads/master'
+        if: github.ref != 'refs/heads/main' && github.ref != 'refs/heads/master'
         run: flutter build web --release --base-href /NollaApp/branch-${{ env.BRANCH_SLUG }}/ --dart-define=BRANCH_NAME=${{ github.ref_name }} --dart-define=TEST_USERNAME=${{ secrets.TEST_USERNAME }} --dart-define=TEST_PASSWORD=${{ secrets.TEST_PASSWORD }}
 
-      - name: Build web (PR preview)
-        if: github.event_name == 'pull_request'
-        run: flutter build web --release --base-href /NollaApp/pr-${{ github.event.pull_request.number }}/ --dart-define=BRANCH_NAME=${{ github.head_ref }} --dart-define=TEST_USERNAME=${{ secrets.TEST_USERNAME }} --dart-define=TEST_PASSWORD=${{ secrets.TEST_PASSWORD }}
-
       - name: Deploy to GitHub Pages (main)
-        if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
         uses: JamesIves/github-pages-deploy-action@v4
         with:
           folder: build/web
           branch: gh-pages
           clean: true
           clean-exclude: |
-            pr-*/
             branch-*/
 
       - name: Deploy branch preview
-        if: github.event_name == 'push' && github.ref != 'refs/heads/main' && github.ref != 'refs/heads/master'
+        if: github.ref != 'refs/heads/main' && github.ref != 'refs/heads/master'
         uses: JamesIves/github-pages-deploy-action@v4
         with:
           folder: build/web
@@ -162,25 +155,34 @@ jobs:
           target-folder: branch-${{ env.BRANCH_SLUG }}
           clean: true
 
-      - name: Deploy PR preview
-        if: github.event_name == 'pull_request'
-        uses: JamesIves/github-pages-deploy-action@v4
-        with:
-          folder: build/web
-          branch: gh-pages
-          target-folder: pr-${{ github.event.pull_request.number }}
-          clean: true
+      - name: Write branch preview summary
+        if: github.ref != 'refs/heads/main' && github.ref != 'refs/heads/master'
+        run: |
+          URL="https://${{ github.repository_owner }}.github.io/NollaApp/branch-${{ env.BRANCH_SLUG }}/"
+          echo "### Branch Preview" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo ":globe_with_meridians: [${URL}](${URL})" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Deployed from commit \`$(echo '${{ github.sha }}' | cut -c1-7)\`" >> $GITHUB_STEP_SUMMARY
 
-      - name: Comment preview URL on PR
-        if: github.event_name == 'pull_request'
+  comment-pr-preview:
+    name: Comment branch preview on PR
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request' && github.event.action != 'closed'
+    permissions:
+      pull-requests: write
+    steps:
+      - name: Post branch preview link
         uses: actions/github-script@v7
         with:
           script: |
-            const prNumber = context.payload.pull_request.number;
+            const branch = context.payload.pull_request.head.ref;
+            const slug = branch.replace(/[^a-zA-Z0-9._-]/g, '-').substring(0, 50);
             const sha = context.payload.pull_request.head.sha.substring(0, 7);
-            const url = `https://${{ github.repository_owner }}.github.io/NollaApp/pr-${prNumber}/`;
-            const body = `### Web Preview\n\n:globe_with_meridians: [Open preview](${url})\n\nDeployed from commit ${sha}`;
+            const url = `https://${{ github.repository_owner }}.github.io/NollaApp/branch-${slug}/`;
+            const body = `### Web Preview\n\n:globe_with_meridians: [Open preview](${url})\n\nBuilt from branch \`${branch}\` — updates on every push (latest: \`${sha}\`)`;
 
+            const prNumber = context.payload.pull_request.number;
             const { data: comments } = await github.rest.issues.listComments({
               owner: context.repo.owner,
               repo: context.repo.repo,
@@ -203,40 +205,6 @@ jobs:
                 body,
               });
             }
-
-      - name: Write branch preview summary
-        if: github.event_name == 'push' && github.ref != 'refs/heads/main' && github.ref != 'refs/heads/master'
-        run: |
-          URL="https://${{ github.repository_owner }}.github.io/NollaApp/branch-${{ env.BRANCH_SLUG }}/"
-          echo "### Branch Preview" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo ":globe_with_meridians: [${URL}](${URL})" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "Deployed from commit \`$(echo '${{ github.sha }}' | cut -c1-7)\`" >> $GITHUB_STEP_SUMMARY
-
-  cleanup-pr-preview:
-    name: Clean up PR preview
-    runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request' && github.event.action == 'closed'
-    permissions:
-      contents: write
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Remove PR preview directory from gh-pages
-        run: |
-          PR_DIR="pr-${{ github.event.pull_request.number }}"
-          git fetch origin gh-pages 2>/dev/null || { echo "gh-pages branch not found, nothing to clean up."; exit 0; }
-          git checkout gh-pages
-          if [ -d "$PR_DIR" ]; then
-            git config user.name "github-actions[bot]"
-            git config user.email "github-actions[bot]@users.noreply.github.com"
-            git rm -rf "$PR_DIR"
-            git commit -m "Remove preview for PR #${{ github.event.pull_request.number }}"
-            git push origin gh-pages
-          else
-            echo "No preview directory found for PR #${{ github.event.pull_request.number }}, nothing to clean up."
-          fi
 
   cleanup-branch-preview:
     name: Clean up branch preview
