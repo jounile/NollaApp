@@ -6,6 +6,8 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:geolocator/geolocator.dart';
 import '../models/spot.dart';
+import 'create_spot_screen.dart';
+import 'spot_detail_screen.dart';
 import '../services/app_logger.dart';
 import '../services/spot_service.dart';
 
@@ -155,6 +157,7 @@ class _SpotsScreenState extends State<SpotsScreen> {
           final spotLatLng = LatLng(s.latitude, s.longitude);
           final distMeters = s.distance ?? distCalc.as(LengthUnit.Meter, center, spotLatLng);
           return _Spot(
+            id: s.id,
             name: s.name,
             latLng: spotLatLng,
             icon: _spotTypeToIcon(s.type),
@@ -179,27 +182,52 @@ class _SpotsScreenState extends State<SpotsScreen> {
     showModalBottomSheet<void>(
       context: context,
       builder: (ctx) => Padding(
-        padding: const EdgeInsets.all(24),
-        child: Row(
+        padding: const EdgeInsets.fromLTRB(24, 24, 24, 32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(spot.icon, size: 40, color: Theme.of(ctx).colorScheme.primary),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(spot.name, style: Theme.of(ctx).textTheme.titleLarge),
-                  const SizedBox(height: 4),
-                  Text(
-                    spot.distanceMeters < 1000
-                        ? '${spot.distanceMeters.round()} m away'
-                        : '${(spot.distanceMeters / 1000).toStringAsFixed(1)} km away',
-                    style: Theme.of(ctx).textTheme.bodyMedium?.copyWith(
-                          color: Theme.of(ctx).colorScheme.onSurfaceVariant,
-                        ),
+            Row(
+              children: [
+                Icon(spot.icon, size: 40, color: Theme.of(ctx).colorScheme.primary),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(spot.name, style: Theme.of(ctx).textTheme.titleLarge),
+                      const SizedBox(height: 4),
+                      Text(
+                        spot.distanceMeters < 1000
+                            ? '${spot.distanceMeters.round()} m away'
+                            : '${(spot.distanceMeters / 1000).toStringAsFixed(1)} km away',
+                        style: Theme.of(ctx).textTheme.bodyMedium?.copyWith(
+                              color: Theme.of(ctx).colorScheme.onSurfaceVariant,
+                            ),
+                      ),
+                    ],
                   ),
-                ],
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                icon: const Icon(Icons.info_outline),
+                label: const Text('View Details'),
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  Navigator.push<void>(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => SpotDetailScreen(
+                        spotId: spot.id,
+                        spotName: spot.name,
+                        authToken: widget.authToken,
+                      ),
+                    ),
+                  );
+                },
               ),
             ),
           ],
@@ -278,6 +306,23 @@ class _SpotsScreenState extends State<SpotsScreen> {
         title: const Text('Spots'),
         actions: [
           IconButton(
+            icon: const Icon(Icons.search),
+            tooltip: 'Search spots',
+            onPressed: () async {
+              final result = await showSearch<_Spot?>(
+                context: context,
+                delegate: _SpotSearchDelegate(
+                  authToken: widget.authToken,
+                  userLat: _userLocation?.latitude,
+                  userLon: _userLocation?.longitude,
+                ),
+              );
+              if (result != null && mounted) {
+                _mapController.move(result.latLng, 15);
+              }
+            },
+          ),
+          IconButton(
             icon: const Icon(Icons.terminal),
             tooltip: 'View logs',
             onPressed: _showLogs,
@@ -299,6 +344,27 @@ class _SpotsScreenState extends State<SpotsScreen> {
             ),
         ],
       ),
+      floatingActionButton: _isLoading
+          ? null
+          : FloatingActionButton(
+              tooltip: 'Add spot',
+              onPressed: () async {
+                final newSpot = await Navigator.push<dynamic>(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => CreateSpotScreen(
+                      authToken: widget.authToken,
+                      initialLat: _userLocation?.latitude,
+                      initialLon: _userLocation?.longitude,
+                    ),
+                  ),
+                );
+                if (newSpot != null && mounted) {
+                  _loadSpots(_mapCenter, zoom: _mapZoom);
+                }
+              },
+              child: const Icon(Icons.add_location_alt_outlined),
+            ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : Stack(
@@ -452,15 +518,85 @@ IconData _spotTypeToIcon(String type) {
 }
 
 class _Spot {
+  final int id;
   final String name;
   final LatLng latLng;
   final IconData icon;
   final double distanceMeters;
 
   const _Spot({
+    required this.id,
     required this.name,
     required this.latLng,
     required this.icon,
     this.distanceMeters = 0,
   });
+}
+
+class _SpotSearchDelegate extends SearchDelegate<_Spot?> {
+  final String authToken;
+  final double? userLat;
+  final double? userLon;
+
+  _SpotSearchDelegate({required this.authToken, this.userLat, this.userLon});
+
+  @override
+  List<Widget> buildActions(BuildContext context) => [
+        if (query.isNotEmpty)
+          IconButton(icon: const Icon(Icons.clear), onPressed: () => query = ''),
+      ];
+
+  @override
+  Widget buildLeading(BuildContext context) =>
+      IconButton(icon: const Icon(Icons.arrow_back), onPressed: () => close(context, null));
+
+  @override
+  Widget buildResults(BuildContext context) => _buildSearchResults(context);
+
+  @override
+  Widget buildSuggestions(BuildContext context) =>
+      query.length < 2 ? const Center(child: Text('Type to search spots')) : _buildSearchResults(context);
+
+  Widget _buildSearchResults(BuildContext context) {
+    if (query.trim().isEmpty) return const SizedBox.shrink();
+    return FutureBuilder<List<Spot>?>(
+      future: SpotService.searchSpots(query, authToken, lat: userLat, lon: userLon),
+      builder: (ctx, snap) {
+        if (snap.connectionState != ConnectionState.done) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        final results = snap.data;
+        if (results == null) {
+          return const Center(child: Text('Search failed — check your connection'));
+        }
+        if (results.isEmpty) {
+          return const Center(child: Text('No spots found'));
+        }
+        return ListView.builder(
+          itemCount: results.length,
+          itemBuilder: (_, i) {
+            final s = results[i];
+            return ListTile(
+              leading: Icon(_spotTypeToIcon(s.type)),
+              title: Text(s.name),
+              subtitle: s.distance != null
+                  ? Text(s.distance! < 1000
+                      ? '${s.distance!.round()} m away'
+                      : '${(s.distance! / 1000).toStringAsFixed(1)} km away')
+                  : null,
+              onTap: () => close(
+                context,
+                _Spot(
+                  id: s.id,
+                  name: s.name,
+                  latLng: LatLng(s.latitude, s.longitude),
+                  icon: _spotTypeToIcon(s.type),
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
 }

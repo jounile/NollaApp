@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'home_screen.dart';
+import 'feed_screen.dart';
 import 'spots_screen.dart';
 import 'media_screen.dart';
 import 'profile_screen.dart';
@@ -20,7 +20,7 @@ class _MainScreenState extends State<MainScreen> {
   int _selectedIndex = 0;
 
   late final List<Widget> _pages = [
-    HomeScreen(username: widget.username),
+    FeedScreen(username: widget.username, authToken: widget.authToken),
     SpotsScreen(authToken: widget.authToken),
     MediaScreen(authToken: widget.authToken),
     ProfileScreen(username: widget.username, authToken: widget.authToken),
@@ -76,9 +76,9 @@ class _MainScreenState extends State<MainScreen> {
         onDestinationSelected: _onItemTapped,
         destinations: const [
           NavigationDestination(
-            icon: Icon(Icons.home_outlined),
-            selectedIcon: Icon(Icons.home),
-            label: 'Home',
+            icon: Icon(Icons.dynamic_feed_outlined),
+            selectedIcon: Icon(Icons.dynamic_feed),
+            label: 'Feed',
           ),
           NavigationDestination(
             icon: Icon(Icons.location_on_outlined),
