@@ -93780,7 +93780,7 @@ else r.push(A.fR(B.ob,i.ax.y,j,16))
 r.push(B.Px)
 if(k.y)p="Searching for spots..."
 else{p=p.length
-p=p===0?"No spots found in this area":""+p+" spots nearby"}o=i.p2.z
+p=p===0?"No spots found in this area":""+p+" spots"}o=i.p2.z
 r.push(A.ca(p,j,j,j,o==null?j:o.Hx(B.a3),j,j))
 r=A.aD8(new A.bH(B.nC,A.fr(r,B.af,B.eT,B.ah),j),j)}h=A.hO(B.bv,A.b([new A.zn(q,new A.tY(s,14,0,3,19,new A.auy(k)),k.d,j),A.qa(16,r,j,j,16,16,j,j)],h),B.H,B.bc,j)}return A.Ch(g,j,h,j,j)}}
 A.aue.prototype={
