@@ -236,66 +236,7 @@ class _SpotsScreenState extends State<SpotsScreen> {
     );
   }
 
-  void _showLogs() {
-    showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setModalState) {
-          final entries = AppLogger.entries;
-          return DraggableScrollableSheet(
-            initialChildSize: 0.6,
-            maxChildSize: 0.92,
-            minChildSize: 0.3,
-            expand: false,
-            builder: (_, scrollController) => Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 16, 8, 8),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.terminal, size: 20),
-                      const SizedBox(width: 8),
-                      const Text('Logs', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                      const Spacer(),
-                      TextButton(
-                        onPressed: () {
-                          AppLogger.clear();
-                          setModalState(() {});
-                        },
-                        child: const Text('Clear'),
-                      ),
-                    ],
-                  ),
-                ),
-                const Divider(height: 1),
-                Expanded(
-                  child: entries.isEmpty
-                      ? const Center(child: Text('No logs yet'))
-                      : ListView.builder(
-                          controller: scrollController,
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                          itemCount: entries.length,
-                          itemBuilder: (_, i) => Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 3),
-                            child: Text(
-                              entries[i].formatted,
-                              style: const TextStyle(
-                                fontFamily: 'monospace',
-                                fontSize: 11,
-                              ),
-                            ),
-                          ),
-                        ),
-                ),
-              ],
-            ),
-          );
-        },
-      ),
-    );
-  }
+  void _showLogs() => showLogViewer(context, filter: const ['[SpotService]']);
 
   @override
   Widget build(BuildContext context) {

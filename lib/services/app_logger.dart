@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 
 class AppLogger {
   AppLogger._();
@@ -13,6 +14,13 @@ class AppLogger {
   }
 
   static List<_LogEntry> get entries => List.unmodifiable(_entries);
+
+  /// Returns only entries whose message contains at least one of [tags].
+  /// If [tags] is empty, returns all entries.
+  static List<_LogEntry> filteredEntries(List<String> tags) {
+    if (tags.isEmpty) return entries;
+    return _entries.where((e) => tags.any((t) => e.message.contains(t))).toList();
+  }
 
   static void clear() => _entries.clear();
 }
@@ -30,3 +38,67 @@ class _LogEntry {
     return '[$hms] $message';
   }
 }
+
+/// Shows a draggable log viewer bottom sheet.
+/// Pass [filter] tags (e.g. `['[FeedService]']`) to show only matching entries.
+void showLogViewer(BuildContext context, {List<String> filter = const []}) {
+  showModalBottomSheet<void>(
+    context: context,
+    isScrollControlled: true,
+    builder: (ctx) => StatefulBuilder(
+      builder: (ctx, setModalState) {
+        final entries = AppLogger.filteredEntries(filter);
+        return DraggableScrollableSheet(
+          initialChildSize: 0.6,
+          maxChildSize: 0.92,
+          minChildSize: 0.3,
+          expand: false,
+          builder: (_, scrollController) => Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 16, 8, 8),
+                child: Row(
+                  children: [
+                    const Icon(Icons.terminal, size: 20),
+                    const SizedBox(width: 8),
+                    const Text('Logs', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                    const Spacer(),
+                    TextButton(
+                      onPressed: () {
+                        AppLogger.clear();
+                        setModalState(() {});
+                      },
+                      child: const Text('Clear'),
+                    ),
+                  ],
+                ),
+              ),
+              const Divider(height: 1),
+              Expanded(
+                child: entries.isEmpty
+                    ? const Center(child: Text('No logs yet'))
+                    : ListView.builder(
+                        controller: scrollController,
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        itemCount: entries.length,
+                        itemBuilder: (_, i) => Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 3),
+                          child: Text(
+                            entries[i].formatted,
+                            style: const TextStyle(
+                              fontFamily: 'monospace',
+                              fontSize: 11,
+                            ),
+                          ),
+                        ),
+                      ),
+              ),
+            ],
+          ),
+        );
+      },
+    ),
+  );
+}
+

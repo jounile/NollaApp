@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import '../models/media_item.dart';
-import 'user_profile_screen.dart';
+import '../services/app_logger.dart';
 import '../services/feed_service.dart';
 import '../services/social_service.dart';
+import 'user_profile_screen.dart';
 
 class FeedScreen extends StatefulWidget {
   final String username;
@@ -87,6 +88,11 @@ class _FeedScreenState extends State<FeedScreen> {
       appBar: AppBar(
         title: const Text('Feed'),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.terminal),
+            tooltip: 'View logs',
+            onPressed: () => showLogViewer(context, filter: const ['[FeedService]', '[SocialService]']),
+          ),
           IconButton(
             icon: const Icon(Icons.refresh),
             tooltip: 'Refresh',
