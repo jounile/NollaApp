@@ -90,7 +90,7 @@ class SpotService {
       AppLogger.log('[SpotService] non-200 status: ${response.statusCode}');
       return null;
     } catch (e) {
-      final isCors = kIsWeb && e.toString().contains('XMLHttpRequest');
+      final isCors = kIsWeb && (e.toString().contains('XMLHttpRequest') || e.toString().contains('Load failed'));
       AppLogger.log(isCors
           ? '[SpotService] CORS error — server must add Access-Control-Allow-Origin header'
           : '[SpotService] exception: $e');
@@ -121,7 +121,7 @@ class SpotService {
       }
       return SpotDetailResult(success: false, message: 'Failed to load spot (${response.statusCode})');
     } catch (e) {
-      final isCors = kIsWeb && e.toString().contains('XMLHttpRequest');
+      final isCors = kIsWeb && (e.toString().contains('XMLHttpRequest') || e.toString().contains('Load failed'));
       AppLogger.log(isCors
           ? '[SpotService] CORS error on detail fetch'
           : '[SpotService] fetchSpotDetail exception: $e');
