@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 class AppLogger {
   AppLogger._();
@@ -64,6 +65,24 @@ void showLogViewer(BuildContext context, {List<String> filter = const []}) {
                     const SizedBox(width: 8),
                     const Text('Logs', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                     const Spacer(),
+                    IconButton(
+                      icon: const Icon(Icons.copy, size: 20),
+                      tooltip: 'Copy to clipboard',
+                      onPressed: entries.isEmpty
+                          ? null
+                          : () async {
+                              final text = entries.map((e) => e.formatted).join('\n');
+                              await Clipboard.setData(ClipboardData(text: text));
+                              if (ctx.mounted) {
+                                ScaffoldMessenger.of(ctx).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('Logs copied to clipboard'),
+                                    duration: Duration(seconds: 2),
+                                  ),
+                                );
+                              }
+                            },
+                    ),
                     TextButton(
                       onPressed: () {
                         AppLogger.clear();

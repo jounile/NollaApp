@@ -162,6 +162,7 @@ class _SpotsScreenState extends State<SpotsScreen> {
             latLng: spotLatLng,
             icon: _spotTypeToIcon(s.type),
             distanceMeters: distMeters,
+            type: s.type,
           );
         }).toList()
           ..sort((a, b) => a.distanceMeters.compareTo(b.distanceMeters));
@@ -224,6 +225,8 @@ class _SpotsScreenState extends State<SpotsScreen> {
                         spotId: spot.id,
                         spotName: spot.name,
                         authToken: widget.authToken,
+                        spotType: spot.type,
+                        spotDistance: spot.distanceMeters,
                       ),
                     ),
                   );
@@ -464,6 +467,7 @@ class _Spot {
   final LatLng latLng;
   final IconData icon;
   final double distanceMeters;
+  final String type;
 
   const _Spot({
     required this.id,
@@ -471,6 +475,7 @@ class _Spot {
     required this.latLng,
     required this.icon,
     this.distanceMeters = 0,
+    this.type = 'place',
   });
 }
 

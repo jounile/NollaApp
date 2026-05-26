@@ -6,12 +6,16 @@ class SpotDetailScreen extends StatefulWidget {
   final int spotId;
   final String spotName;
   final String authToken;
+  final String spotType;
+  final double? spotDistance;
 
   const SpotDetailScreen({
     super.key,
     required this.spotId,
     required this.spotName,
     required this.authToken,
+    this.spotType = 'place',
+    this.spotDistance,
   });
 
   @override
@@ -53,37 +57,79 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
       appBar: AppBar(title: Text(widget.spotName)),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
-          : _error != null
-              ? _ErrorView(message: _error!, onRetry: _load)
-              : _spot == null
-                  ? const Center(child: Text('Spot not found'))
-                  : _SpotDetailBody(spot: _spot!, theme: theme),
+          : _spot != null
+              ? _SpotDetailBody(spot: _spot!, theme: theme)
+              : _FallbackBody(
+                  type: widget.spotType,
+                  distance: widget.spotDistance,
+                  error: _error ?? 'Failed to load spot',
+                  onRetry: _load,
+                  theme: theme,
+                ),
     );
   }
 }
 
-class _ErrorView extends StatelessWidget {
-  final String message;
+class _FallbackBody extends StatelessWidget {
+  final String type;
+  final double? distance;
+  final String error;
   final VoidCallback onRetry;
+  final ThemeData theme;
 
-  const _ErrorView({required this.message, required this.onRetry});
+  const _FallbackBody({
+    required this.type,
+    this.distance,
+    required this.error,
+    required this.onRetry,
+    required this.theme,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.error_outline, size: 48, color: Theme.of(context).colorScheme.error),
-            const SizedBox(height: 16),
-            Text(message, textAlign: TextAlign.center),
-            const SizedBox(height: 16),
-            FilledButton(onPressed: onRetry, child: const Text('Retry')),
-          ],
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        _TypeBadge(type: type, theme: theme),
+        if (distance != null) ...[
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Icon(Icons.straighten, size: 16, color: theme.colorScheme.onSurfaceVariant),
+              const SizedBox(width: 6),
+              Text(
+                distance! < 1000
+                    ? '${distance!.round()} m away'
+                    : '${(distance! / 1000).toStringAsFixed(1)} km away',
+                style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+              ),
+            ],
+          ),
+        ],
+        const SizedBox(height: 16),
+        Card(
+          color: theme.colorScheme.errorContainer,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            child: Row(
+              children: [
+                Icon(Icons.cloud_off_outlined, color: theme.colorScheme.onErrorContainer, size: 18),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    error,
+                    style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onErrorContainer),
+                  ),
+                ),
+                TextButton(
+                  onPressed: onRetry,
+                  child: Text('Retry', style: TextStyle(color: theme.colorScheme.onErrorContainer)),
+                ),
+              ],
+            ),
+          ),
         ),
-      ),
+      ],
     );
   }
 }
@@ -207,6 +253,7 @@ class _TypeBadge extends StatelessWidget {
       'park' => Icons.park,
       _ => Icons.place,
     };
+    final label = type.isEmpty ? 'Place' : type[0].toUpperCase() + type.substring(1);
     return Row(
       children: [
         Container(
@@ -221,7 +268,7 @@ class _TypeBadge extends StatelessWidget {
               Icon(icon, size: 16, color: theme.colorScheme.onSecondaryContainer),
               const SizedBox(width: 6),
               Text(
-                type[0].toUpperCase() + type.substring(1),
+                label,
                 style: theme.textTheme.labelMedium?.copyWith(color: theme.colorScheme.onSecondaryContainer),
               ),
             ],
