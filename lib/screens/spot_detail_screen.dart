@@ -221,7 +221,7 @@ class _TypeBadge extends StatelessWidget {
               Icon(icon, size: 16, color: theme.colorScheme.onSecondaryContainer),
               const SizedBox(width: 6),
               Text(
-                type[0].toUpperCase() + type.substring(1),
+                type.isEmpty ? 'Place' : type[0].toUpperCase() + type.substring(1),
                 style: theme.textTheme.labelMedium?.copyWith(color: theme.colorScheme.onSecondaryContainer),
               ),
             ],

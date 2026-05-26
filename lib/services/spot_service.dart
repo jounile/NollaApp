@@ -107,21 +107,28 @@ class SpotService {
       };
       AppLogger.log('[SpotService] GET $uri');
       final response = await http.get(uri, headers: headers).timeout(const Duration(seconds: 10));
-      AppLogger.log('[SpotService] detail status=${response.statusCode}');
+      AppLogger.log('[SpotService] detail status=${response.statusCode} body=${response.body}');
       if (response.statusCode == 200) {
         final body = jsonDecode(response.body);
-        final Map<String, dynamic> data;
-        if (body is Map<String, dynamic>) {
-          data = (body['spot'] ?? body['data'] ?? body) as Map<String, dynamic>;
-        } else {
+        if (body is! Map<String, dynamic>) {
           return const SpotDetailResult(success: false, message: 'Unexpected response format');
         }
-        return SpotDetailResult(success: true, spot: SpotDetail.fromJson(data));
+        final raw = body['spot'] ?? body['data'] ?? body;
+        if (raw is! Map<String, dynamic>) {
+          return const SpotDetailResult(success: false, message: 'Unexpected response format');
+        }
+        return SpotDetailResult(success: true, spot: SpotDetail.fromJson(raw));
       }
       return SpotDetailResult(success: false, message: 'Failed to load spot (${response.statusCode})');
     } catch (e) {
-      AppLogger.log('[SpotService] fetchSpotDetail exception: $e');
-      return SpotDetailResult(success: false, message: 'Network error');
+      final isCors = kIsWeb && e.toString().contains('XMLHttpRequest');
+      AppLogger.log(isCors
+          ? '[SpotService] CORS error on detail fetch'
+          : '[SpotService] fetchSpotDetail exception: $e');
+      return SpotDetailResult(
+        success: false,
+        message: isCors ? 'CORS error — API must allow web requests' : 'Network error',
+      );
     }
   }
 

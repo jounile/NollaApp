@@ -69,7 +69,7 @@ class SpotDetail {
       name: json['name'] as String? ?? 'Unknown',
       latitude: lat ?? 0.0,
       longitude: lon ?? 0.0,
-      type: json['type'] as String? ?? 'place',
+      type: (json['type'] is String && (json['type'] as String).isNotEmpty) ? json['type'] as String : 'place',
       // distance_km in km → metres; fall back to distance if present
       distance: _distanceMeters(json),
       // API uses 'info' as the description field
