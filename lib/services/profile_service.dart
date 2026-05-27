@@ -34,6 +34,9 @@ class PublicProfileResult {
 class ProfileService {
   static const String _profileUrl = 'https://nolla.net/api/v1/profile';
 
+  static bool _isCors(Object e) =>
+      kIsWeb && (e.toString().contains('XMLHttpRequest') || e.toString().contains('Load failed'));
+
   static Map<String, String> _headers(String authToken) => {
     'Content-Type': 'application/json',
     'Accept': 'application/json',
@@ -60,15 +63,19 @@ class ProfileService {
         return ProfileResult(success: true, profile: Profile.fromJson(data));
       } else if (response.statusCode == 401) {
         return const ProfileResult(success: false, message: 'Session expired — please log in again');
-      } else if (response.statusCode == 404) {
-        return const ProfileResult(success: false, message: 'Profile endpoint not found — API may not support this yet');
       } else {
+        if (kIsWeb) {
+          AppLogger.log('[ProfileService] web API error (${response.statusCode}) — returning mock profile');
+          return const ProfileResult(success: true, profile: mockProfile, isMockData: true);
+        }
+        if (response.statusCode == 404) {
+          return const ProfileResult(success: false, message: 'Profile endpoint not found — API may not support this yet');
+        }
         return ProfileResult(success: false, message: 'Failed to load profile (${response.statusCode})');
       }
     } catch (e) {
       AppLogger.log('[ProfileService] exception: $e');
-      final isCors = kIsWeb && e.toString().contains('XMLHttpRequest');
-      if (isCors) {
+      if (_isCors(e)) {
         AppLogger.log('[ProfileService] CORS — returning mock profile');
         return const ProfileResult(success: true, profile: mockProfile, isMockData: true);
       }
