@@ -3,29 +3,43 @@ import 'screens/login_screen.dart';
 import 'screens/main_screen.dart';
 import 'services/session_service.dart';
 
-void main() async {
+void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  final session = await SessionService.load();
-  runApp(NollaApp(session: session));
+  runApp(const NollaApp());
 }
 
-class NollaApp extends StatelessWidget {
-  final ({String username, String token})? session;
+class NollaApp extends StatefulWidget {
+  const NollaApp({super.key});
 
-  const NollaApp({super.key, required this.session});
+  @override
+  State<NollaApp> createState() => _NollaAppState();
+}
+
+class _NollaAppState extends State<NollaApp> {
+  ({String username, String token})? _session;
+  bool _loaded = false;
+
+  @override
+  void initState() {
+    super.initState();
+    SessionService.load().then((s) {
+      if (mounted) setState(() { _session = s; _loaded = true; });
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
-    final s = session;
     return MaterialApp(
       title: 'NollaApp',
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
         useMaterial3: true,
       ),
-      home: s != null
-          ? MainScreen(username: s.username, authToken: s.token)
-          : const LoginScreen(),
+      home: !_loaded
+          ? const Scaffold(body: Center(child: CircularProgressIndicator()))
+          : _session != null
+              ? MainScreen(username: _session!.username, authToken: _session!.token)
+              : const LoginScreen(),
     );
   }
 }

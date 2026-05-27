@@ -17,9 +17,11 @@ class FeedScreen extends StatefulWidget {
 
 class _FeedScreenState extends State<FeedScreen> {
   final List<MediaItem> _items = [];
+  final Set<int> _likingIds = {};
   bool _isLoading = true;
   bool _isFetchingMore = false;
   bool _hasMore = false;
+  bool _isMockData = false;
   int _page = 1;
   String? _error;
 
@@ -46,6 +48,7 @@ class _FeedScreenState extends State<FeedScreen> {
         if (refresh) _items.clear();
         _items.addAll(result.items);
         _hasMore = result.hasMore;
+        _isMockData = result.isMockData;
       } else {
         _error = result.message;
       }
@@ -63,11 +66,15 @@ class _FeedScreenState extends State<FeedScreen> {
 
   void _toggleLike(int index) {
     final item = _items[index];
+    if (_likingIds.contains(item.id)) return;
     final optimistic = item.copyWith(
       isLikedByMe: !item.isLikedByMe,
       likeCount: item.likeCount + (item.isLikedByMe ? -1 : 1),
     );
-    setState(() => _items[index] = optimistic);
+    setState(() {
+      _items[index] = optimistic;
+      _likingIds.add(item.id);
+    });
 
     final future = optimistic.isLikedByMe
         ? SocialService.likeMedia(item.id, widget.authToken)
@@ -75,8 +82,18 @@ class _FeedScreenState extends State<FeedScreen> {
 
     future.then((result) {
       if (!mounted) return;
-      if (!result.success) {
-        setState(() => _items[index] = item);
+      setState(() => _likingIds.remove(item.id));
+      if (result.success) {
+        if (result.newCount != null) {
+          final i = _items.indexWhere((e) => e.id == item.id);
+          if (i != -1) setState(() => _items[i] = _items[i].copyWith(likeCount: result.newCount!));
+        }
+      } else {
+        final i = _items.indexWhere((e) => e.id == item.id);
+        if (i != -1) setState(() => _items[i] = item);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(result.message ?? 'Could not update like')),
+        );
       }
     });
   }
@@ -100,7 +117,17 @@ class _FeedScreenState extends State<FeedScreen> {
           ),
         ],
       ),
-      body: _isLoading
+      body: Column(
+        children: [
+          if (_isMockData)
+            MaterialBanner(
+              content: const Text('Demo mode — showing sample data (web preview)'),
+              leading: const Icon(Icons.info_outline),
+              actions: [TextButton(onPressed: () => setState(() => _isMockData = false), child: const Text('Dismiss'))],
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            ),
+          Expanded(
+            child: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _error != null && _items.isEmpty
               ? _ErrorView(message: _error!, onRetry: () => _loadFeed(refresh: true))
@@ -121,12 +148,16 @@ class _FeedScreenState extends State<FeedScreen> {
                           return _MediaCard(
                             item: _items[i],
                             onLike: () => _toggleLike(i),
+                            isLiking: _likingIds.contains(_items[i].id),
                             theme: theme,
                             authToken: widget.authToken,
                           );
                         },
                       ),
                     ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -208,10 +239,11 @@ class _ErrorView extends StatelessWidget {
 class _MediaCard extends StatelessWidget {
   final MediaItem item;
   final VoidCallback onLike;
+  final bool isLiking;
   final ThemeData theme;
   final String authToken;
 
-  const _MediaCard({required this.item, required this.onLike, required this.theme, required this.authToken});
+  const _MediaCard({required this.item, required this.onLike, required this.isLiking, required this.theme, required this.authToken});
 
   @override
   Widget build(BuildContext context) {
@@ -294,6 +326,12 @@ class _MediaCard extends StatelessWidget {
                             style: theme.textTheme.bodySmall
                                 ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
                           ),
+                        if (item.createdAt != null)
+                          Text(
+                            _relativeTime(item.createdAt),
+                            style: theme.textTheme.bodySmall
+                                ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                          ),
                       ],
                     ),
                   ),
@@ -315,9 +353,9 @@ class _MediaCard extends StatelessWidget {
                 IconButton(
                   icon: Icon(
                     item.isLikedByMe ? Icons.favorite : Icons.favorite_border,
-                    color: item.isLikedByMe ? Colors.red : null,
+                    color: item.isLikedByMe ? theme.colorScheme.error : null,
                   ),
-                  onPressed: onLike,
+                  onPressed: isLiking ? null : onLike,
                   iconSize: 20,
                 ),
                 if (item.likeCount > 0)
@@ -335,4 +373,16 @@ class _MediaCard extends StatelessWidget {
       ),
     );
   }
+}
+
+String _relativeTime(String? iso) {
+  if (iso == null) return '';
+  final dt = DateTime.tryParse(iso);
+  if (dt == null) return '';
+  final diff = DateTime.now().difference(dt);
+  if (diff.inMinutes < 1) return 'just now';
+  if (diff.inHours < 1) return '${diff.inMinutes}m ago';
+  if (diff.inDays < 1) return '${diff.inHours}h ago';
+  if (diff.inDays < 7) return '${diff.inDays}d ago';
+  return '${dt.day}/${dt.month}/${dt.year}';
 }

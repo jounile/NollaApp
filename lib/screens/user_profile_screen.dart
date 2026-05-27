@@ -3,6 +3,7 @@ import '../models/public_profile.dart';
 import '../models/spot.dart';
 import '../models/media_item.dart';
 import '../services/profile_service.dart';
+import '../utils/spot_utils.dart';
 
 class UserProfileScreen extends StatefulWidget {
   final String username;
@@ -176,7 +177,7 @@ class _SpotsList extends StatelessWidget {
       itemBuilder: (_, i) {
         final s = spots[i];
         return ListTile(
-          leading: Icon(_spotTypeIcon(s.type), color: theme.colorScheme.primary),
+          leading: Icon(spotTypeToIcon(s.type), color: theme.colorScheme.primary),
           title: Text(s.name),
           subtitle: Text(s.type),
         );
@@ -184,18 +185,6 @@ class _SpotsList extends StatelessWidget {
     );
   }
 
-  IconData _spotTypeIcon(String type) {
-    switch (type) {
-      case 'terrain':
-        return Icons.terrain;
-      case 'water':
-        return Icons.water;
-      case 'park':
-        return Icons.park;
-      default:
-        return Icons.place;
-    }
-  }
 }
 
 class _MediaGrid extends StatelessWidget {

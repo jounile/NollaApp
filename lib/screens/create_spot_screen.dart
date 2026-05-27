@@ -64,6 +64,9 @@ class _CreateSpotScreenState extends State<CreateSpotScreen> {
       });
     } catch (_) {
       if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not get location — tap Update Location to try again')),
+      );
     } finally {
       if (mounted) setState(() => _isLocating = false);
     }

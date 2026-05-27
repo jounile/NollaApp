@@ -14,6 +14,7 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
+  final _formKey = GlobalKey<FormState>();
   bool _loading = true;
   bool _editing = false;
   bool _saving = false;
@@ -75,6 +76,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> _saveChanges() async {
+    if (!(_formKey.currentState?.validate() ?? true)) return;
     final current = _profile ?? Profile(username: widget.username, displayName: '', bio: '', email: '', website: '');
     final updated = current.copyWith(
       displayName: _displayNameCtrl.text.trim(),
@@ -101,6 +103,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
+  bool _hasUnsavedChanges() {
+    final p = _profile;
+    if (p == null) return false;
+    return _displayNameCtrl.text.trim() != p.displayName ||
+        _bioCtrl.text.trim() != p.bio ||
+        _emailCtrl.text.trim() != p.email ||
+        _websiteCtrl.text.trim() != p.website;
+  }
+
   String get _initials {
     final name = (_profile?.displayName.isNotEmpty == true)
         ? _profile!.displayName
@@ -114,7 +125,27 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return Scaffold(
+    return PopScope(
+      canPop: !_editing || !_hasUnsavedChanges(),
+      onPopInvokedWithResult: (didPop, _) async {
+        if (didPop) return;
+        final confirmed = await showDialog<bool>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: const Text('Discard changes?'),
+            content: const Text('Your edits will be lost.'),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Keep editing')),
+              FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Discard')),
+            ],
+          ),
+        );
+        if (confirmed == true && context.mounted) {
+          _cancelEditing();
+          Navigator.pop(context);
+        }
+      },
+      child: Scaffold(
       backgroundColor: theme.colorScheme.surface,
       appBar: AppBar(
         title: const Text('Profile'),
@@ -149,7 +180,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ? _ErrorView(message: _errorMessage!, onRetry: _fetchProfile)
                 : SingleChildScrollView(
                     padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-                    child: Column(
+                    child: Form(
+                      key: _formKey,
+                      child: Column(
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         _Avatar(initials: _initials, theme: theme),
@@ -185,6 +218,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           hint: 'your@email.com',
                           icon: Icons.email_outlined,
                           keyboardType: TextInputType.emailAddress,
+                          validator: (v) {
+                            if (v == null || v.isEmpty) return null;
+                            if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(v)) return 'Enter a valid email';
+                            return null;
+                          },
                         ),
                         const SizedBox(height: 16),
                         _ProfileField(
@@ -194,10 +232,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           hint: 'https://example.com',
                           icon: Icons.link_outlined,
                           keyboardType: TextInputType.url,
+                          validator: (v) {
+                            if (v == null || v.isEmpty) return null;
+                            if (!RegExp(r'^https?://').hasMatch(v)) return 'Must start with https://';
+                            return null;
+                          },
                         ),
                       ],
                     ),
+                    ),
                   ),
+      ),
       ),
     );
   }
@@ -265,6 +310,7 @@ class _ProfileField extends StatelessWidget {
   final IconData icon;
   final int maxLines;
   final TextInputType? keyboardType;
+  final String? Function(String?)? validator;
 
   const _ProfileField({
     required this.label,
@@ -274,6 +320,7 @@ class _ProfileField extends StatelessWidget {
     required this.icon,
     this.maxLines = 1,
     this.keyboardType,
+    this.validator,
   });
 
   @override
@@ -281,10 +328,11 @@ class _ProfileField extends StatelessWidget {
     final theme = Theme.of(context);
 
     if (editing) {
-      return TextField(
+      return TextFormField(
         controller: controller,
         maxLines: maxLines,
         keyboardType: keyboardType,
+        validator: validator,
         decoration: InputDecoration(
           labelText: label,
           hintText: hint,

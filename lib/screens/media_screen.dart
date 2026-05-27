@@ -9,11 +9,17 @@ enum UploadStatus { pending, uploading, uploaded, failed }
 class _MediaItem {
   final XFile file;
   final bool isVideo;
+  final int fileSize;
   UploadStatus uploadStatus;
   String? uploadedUrl;
 
-  _MediaItem({required this.file, required this.isVideo})
+  _MediaItem({required this.file, required this.isVideo, required this.fileSize})
       : uploadStatus = UploadStatus.pending;
+}
+
+String _formatBytes(int bytes) {
+  if (bytes >= 1000000) return '${(bytes / 1000000).toStringAsFixed(1)} MB';
+  return '${(bytes / 1000).round()} KB';
 }
 
 class MediaScreen extends StatefulWidget {
@@ -40,8 +46,9 @@ class _MediaScreenState extends State<MediaScreen> {
         maxHeight: 1920,
       );
       if (file != null && mounted) {
+        final size = File(file.path).lengthSync();
         setState(() {
-          _mediaItems.insert(0, _MediaItem(file: file, isVideo: false));
+          _mediaItems.insert(0, _MediaItem(file: file, isVideo: false, fileSize: size));
         });
       }
     } catch (e) {
@@ -54,8 +61,9 @@ class _MediaScreenState extends State<MediaScreen> {
     try {
       final XFile? file = await _picker.pickVideo(source: source);
       if (file != null && mounted) {
+        final size = File(file.path).lengthSync();
         setState(() {
-          _mediaItems.insert(0, _MediaItem(file: file, isVideo: true));
+          _mediaItems.insert(0, _MediaItem(file: file, isVideo: true, fileSize: size));
         });
       }
     } catch (e) {
@@ -90,9 +98,15 @@ class _MediaScreenState extends State<MediaScreen> {
           item.uploadStatus = UploadStatus.failed;
         }
       });
+      if (!result.success) _showError(result.message ?? 'Upload failed');
     }
 
     if (mounted) setState(() => _isUploading = false);
+  }
+
+  void _retryItem(int index) {
+    setState(() => _mediaItems[index].uploadStatus = UploadStatus.pending);
+    _uploadAll();
   }
 
   void _showError(String message) {
@@ -121,7 +135,7 @@ class _MediaScreenState extends State<MediaScreen> {
                 height: 4,
                 margin: const EdgeInsets.only(bottom: 16),
                 decoration: BoxDecoration(
-                  color: Colors.grey[300],
+                  color: Theme.of(ctx).colorScheme.outlineVariant,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -226,6 +240,9 @@ class _MediaScreenState extends State<MediaScreen> {
                   onDelete: item.uploadStatus == UploadStatus.uploading
                       ? null
                       : () => _removeItem(index),
+                  onRetry: item.uploadStatus == UploadStatus.failed
+                      ? () => _retryItem(index)
+                      : null,
                 );
               },
             ),
@@ -241,8 +258,9 @@ class _MediaScreenState extends State<MediaScreen> {
 class _MediaTile extends StatelessWidget {
   final _MediaItem item;
   final VoidCallback? onDelete;
+  final VoidCallback? onRetry;
 
-  const _MediaTile({required this.item, required this.onDelete});
+  const _MediaTile({required this.item, required this.onDelete, this.onRetry});
 
   @override
   Widget build(BuildContext context) {
@@ -270,6 +288,21 @@ class _MediaTile extends StatelessWidget {
             left: 4,
             child: Icon(Icons.videocam, color: Colors.white, size: 16),
           ),
+        Positioned(
+          top: 4,
+          left: 4,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+            decoration: BoxDecoration(
+              color: Colors.black54,
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: Text(
+              _formatBytes(item.fileSize),
+              style: const TextStyle(color: Colors.white, fontSize: 10),
+            ),
+          ),
+        ),
         if (item.uploadStatus == UploadStatus.uploading)
           ClipRRect(
             borderRadius: BorderRadius.circular(4),
@@ -301,14 +334,17 @@ class _MediaTile extends StatelessWidget {
           Positioned(
             bottom: 4,
             right: 4,
-            child: Container(
-              width: 20,
-              height: 20,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.red[700],
+            child: GestureDetector(
+              onTap: onRetry,
+              child: Container(
+                width: 20,
+                height: 20,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Theme.of(context).colorScheme.error,
+                ),
+                child: const Icon(Icons.error_outline, color: Colors.white, size: 14),
               ),
-              child: const Icon(Icons.refresh, color: Colors.white, size: 14),
             ),
           ),
         if (onDelete != null)

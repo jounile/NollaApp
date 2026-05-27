@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/spot_detail.dart';
 import '../services/spot_service.dart';
+import '../utils/spot_utils.dart';
 
 class SpotDetailScreen extends StatefulWidget {
   final int spotId;
@@ -98,9 +99,7 @@ class _FallbackBody extends StatelessWidget {
               Icon(Icons.straighten, size: 16, color: theme.colorScheme.onSurfaceVariant),
               const SizedBox(width: 6),
               Text(
-                distance! < 1000
-                    ? '${distance!.round()} m away'
-                    : '${(distance! / 1000).toStringAsFixed(1)} km away',
+                formatDistance(distance!),
                 style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
               ),
             ],
@@ -153,9 +152,7 @@ class _SpotDetailBody extends StatelessWidget {
               Icon(Icons.straighten, size: 16, color: theme.colorScheme.onSurfaceVariant),
               const SizedBox(width: 6),
               Text(
-                spot.distance! < 1000
-                    ? '${spot.distance!.round()} m away'
-                    : '${(spot.distance! / 1000).toStringAsFixed(1)} km away',
+                formatDistance(spot.distance!),
                 style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
               ),
             ],
@@ -216,18 +213,34 @@ class _SpotDetailBody extends StatelessWidget {
               scrollDirection: Axis.horizontal,
               itemCount: spot.mediaUrls.length,
               separatorBuilder: (_, __) => const SizedBox(width: 8),
-              itemBuilder: (ctx, i) => ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: Image.network(
-                  spot.mediaUrls[i],
-                  width: 160,
-                  height: 160,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => Container(
+              itemBuilder: (ctx, i) => GestureDetector(
+                onTap: () => Navigator.push<void>(
+                  ctx,
+                  MaterialPageRoute(
+                    builder: (_) => Scaffold(
+                      backgroundColor: Colors.black,
+                      appBar: AppBar(backgroundColor: Colors.transparent, foregroundColor: Colors.white),
+                      body: Center(
+                        child: InteractiveViewer(
+                          child: Image.network(spot.mediaUrls[i], fit: BoxFit.contain),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: Image.network(
+                    spot.mediaUrls[i],
                     width: 160,
                     height: 160,
-                    color: theme.colorScheme.surfaceContainerHighest,
-                    child: const Icon(Icons.broken_image_outlined),
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => Container(
+                      width: 160,
+                      height: 160,
+                      color: theme.colorScheme.surfaceContainerHighest,
+                      child: const Icon(Icons.broken_image_outlined),
+                    ),
                   ),
                 ),
               ),
@@ -247,12 +260,7 @@ class _TypeBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final icon = switch (type) {
-      'terrain' => Icons.terrain,
-      'water' => Icons.water,
-      'park' => Icons.park,
-      _ => Icons.place,
-    };
+    final icon = spotTypeToIcon(type);
     final label = type.isEmpty ? 'Place' : type[0].toUpperCase() + type.substring(1);
     return Row(
       children: [

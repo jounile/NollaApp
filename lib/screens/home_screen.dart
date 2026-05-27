@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 
 class HomeScreen extends StatelessWidget {
   final String username;
+  final ValueChanged<int>? onNavigate;
 
-  const HomeScreen({super.key, required this.username});
+  const HomeScreen({super.key, required this.username, this.onNavigate});
 
   @override
   Widget build(BuildContext context) {
@@ -73,6 +74,7 @@ class HomeScreen extends StatelessWidget {
                   description: 'Discover places near you on the map',
                   color: theme.colorScheme.secondaryContainer,
                   onColor: theme.colorScheme.onSecondaryContainer,
+                  onTap: onNavigate != null ? () => onNavigate!(2) : null,
                 ),
                 const SizedBox(height: 12),
                 _FeatureCard(
@@ -81,6 +83,7 @@ class HomeScreen extends StatelessWidget {
                   description: 'Share photos and videos with the community',
                   color: theme.colorScheme.tertiaryContainer,
                   onColor: theme.colorScheme.onTertiaryContainer,
+                  onTap: onNavigate != null ? () => onNavigate!(3) : null,
                 ),
               ],
             ),
@@ -97,6 +100,7 @@ class _FeatureCard extends StatelessWidget {
   final String description;
   final Color color;
   final Color onColor;
+  final VoidCallback? onTap;
 
   const _FeatureCard({
     required this.icon,
@@ -104,11 +108,15 @@ class _FeatureCard extends StatelessWidget {
     required this.description,
     required this.color,
     required this.onColor,
+    this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -139,6 +147,7 @@ class _FeatureCard extends StatelessWidget {
             ),
           ),
         ],
+      ),
       ),
     );
   }

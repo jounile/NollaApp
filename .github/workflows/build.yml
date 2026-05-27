@@ -71,6 +71,7 @@ jobs:
       cancel-in-progress: true
     permissions:
       contents: write
+      pull-requests: write
     steps:
       - uses: actions/checkout@v4
 
@@ -82,6 +83,12 @@ jobs:
 
       - name: Get dependencies
         run: flutter pub get
+
+      - name: Analyze
+        run: flutter analyze --no-fatal-infos
+
+      - name: Test
+        run: flutter test
 
       - name: Enable web support
         run: flutter create --platforms=web --org com.example --project-name nolla_app .
@@ -119,15 +126,28 @@ jobs:
           target-folder: branch-${{ env.BRANCH_SLUG }}
           clean: true
 
-      - name: Write branch preview summary
+      - name: Write branch preview summary and comment on PR
         if: github.ref != 'refs/heads/main' && github.ref != 'refs/heads/master'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           URL="https://${{ github.repository_owner }}.github.io/NollaApp/branch-${{ env.BRANCH_SLUG }}/"
+          SHORT_SHA=$(echo '${{ github.sha }}' | cut -c1-7)
           echo "### Branch Preview" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo ":globe_with_meridians: [${URL}](${URL})" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "Deployed from commit \`$(echo '${{ github.sha }}' | cut -c1-7)\`" >> $GITHUB_STEP_SUMMARY
+          echo "Deployed from commit \`${SHORT_SHA}\`" >> $GITHUB_STEP_SUMMARY
+          PR_NUMBER=$(gh pr list --head "${{ github.ref_name }}" --json number -q '.[0].number' 2>/dev/null || echo "")
+          if [ -n "$PR_NUMBER" ]; then
+            BODY=":globe_with_meridians: **Branch preview:** [${URL}](${URL}) (commit \`${SHORT_SHA}\`)"
+            EXISTING=$(gh pr view "$PR_NUMBER" --json comments -q '.comments[] | select(.body | startswith(":globe_with_meridians: **Branch preview:**")) | .databaseId' | head -1)
+            if [ -n "$EXISTING" ]; then
+              gh api repos/${{ github.repository }}/issues/comments/"$EXISTING" -X PATCH -f body="$BODY" > /dev/null
+            else
+              gh pr comment "$PR_NUMBER" --body "$BODY"
+            fi
+          fi
 
   cleanup-branch-preview:
     name: Clean up branch preview
