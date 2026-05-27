@@ -17,7 +17,7 @@ class SpotDeviationsScreen extends StatefulWidget {
 class _SpotDeviationsScreenState extends State<SpotDeviationsScreen> {
   static const _helsinkiLat = 60.1699;
   static const _helsinkiLon = 24.9384;
-  static const _fetchRadiusMeters = 50000;
+  static const _fetchRadiusMeters = 200000;
 
   bool _isLoading = true;
   String? _error;
