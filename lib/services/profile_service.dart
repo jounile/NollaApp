@@ -6,14 +6,21 @@ import '../models/profile.dart';
 import '../models/public_profile.dart';
 import '../models/media_item.dart';
 import '../models/spot.dart';
+import '../utils/mock_data.dart';
 import 'app_logger.dart';
 
 class ProfileResult {
   final bool success;
   final String? message;
   final Profile? profile;
+  final bool isMockData;
 
-  const ProfileResult({required this.success, this.message, this.profile});
+  const ProfileResult({
+    required this.success,
+    this.message,
+    this.profile,
+    this.isMockData = false,
+  });
 }
 
 class PublicProfileResult {
@@ -61,12 +68,11 @@ class ProfileService {
     } catch (e) {
       AppLogger.log('[ProfileService] exception: $e');
       final isCors = kIsWeb && e.toString().contains('XMLHttpRequest');
-      return ProfileResult(
-        success: false,
-        message: isCors
-            ? 'Cannot load profile on web — server CORS policy blocks this request'
-            : 'Network error. Please check your connection.',
-      );
+      if (isCors) {
+        AppLogger.log('[ProfileService] CORS — returning mock profile');
+        return const ProfileResult(success: true, profile: mockProfile, isMockData: true);
+      }
+      return const ProfileResult(success: false, message: 'Network error. Please check your connection.');
     }
   }
 

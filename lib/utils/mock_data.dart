@@ -1,5 +1,16 @@
 import '../models/media_item.dart';
+import '../models/profile.dart';
 import '../models/spot.dart';
+
+const Profile mockProfile = Profile(
+  username: 'demo_user',
+  displayName: 'Demo User',
+  bio: 'Skateboarding enthusiast 🛹',
+  email: 'demo@nolla.net',
+  website: 'https://nolla.net',
+  followerCount: 42,
+  followingCount: 17,
+);
 
 const List<MediaItem> mockFeedItems = [
   MediaItem(
