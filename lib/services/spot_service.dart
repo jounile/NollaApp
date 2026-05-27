@@ -30,6 +30,7 @@ class SpotService {
     double? latitude,
     double? longitude,
     int? radius,
+    int limit = 100,
     String? authToken,
   }) async {
     try {
@@ -38,7 +39,7 @@ class SpotService {
           if (latitude != null) 'lat': latitude.toString(),
           if (longitude != null) 'lon': longitude.toString(),
           if (radius != null) 'radius': radius.toString(),
-          'limit': '100',
+          'limit': limit.toString(),
         },
       );
       final headers = <String, String>{'Accept': 'application/json'};

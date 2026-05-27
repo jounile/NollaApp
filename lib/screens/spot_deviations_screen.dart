@@ -18,6 +18,7 @@ class _SpotDeviationsScreenState extends State<SpotDeviationsScreen> {
   static const _helsinkiLat = 60.1699;
   static const _helsinkiLon = 24.9384;
   static const _fetchRadiusMeters = 200000;
+  static const _fetchLimit = 1000;
 
   bool _isLoading = true;
   String? _error;
@@ -41,6 +42,7 @@ class _SpotDeviationsScreenState extends State<SpotDeviationsScreen> {
       latitude: _helsinkiLat,
       longitude: _helsinkiLon,
       radius: _fetchRadiusMeters,
+      limit: _fetchLimit,
       authToken: widget.authToken,
     );
 
