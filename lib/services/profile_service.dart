@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
 import '../models/profile.dart';
 import '../models/public_profile.dart';
 import '../models/media_item.dart';
@@ -106,6 +107,52 @@ class ProfileService {
         message: isCors
             ? 'Cannot save profile on web — server CORS policy blocks this request'
             : 'Network error. Please check your connection.',
+      );
+    }
+  }
+
+  static Future<ProfileResult> uploadAvatar(String authToken, String filePath) async {
+    try {
+      final uri = Uri.parse('https://nolla.net/api/v1/profile/avatar');
+      AppLogger.log('[ProfileService] POST $uri (avatar upload)');
+      final request = http.MultipartRequest('POST', uri)
+        ..headers.addAll({
+          'Accept': 'application/json',
+          'Authorization': 'Bearer $authToken',
+        });
+      final ext = filePath.split('.').last.toLowerCase();
+      final mimeType = ext == 'png' ? 'image/png' : 'image/jpeg';
+      request.files.add(
+        await http.MultipartFile.fromPath(
+          'avatar',
+          filePath,
+          contentType: MediaType.parse(mimeType),
+        ),
+      );
+      final streamed = await request.send().timeout(const Duration(minutes: 2));
+      final response = await http.Response.fromStream(streamed);
+      AppLogger.log('[ProfileService] avatar upload status=${response.statusCode}');
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        if (response.body.isNotEmpty) {
+          try {
+            final body = jsonDecode(response.body);
+            if (body is Map<String, dynamic>) {
+              final data = (body['profile'] ?? body['user'] ?? body['data'] ?? body) as Map<String, dynamic>;
+              return ProfileResult(success: true, profile: Profile.fromJson(data));
+            }
+          } catch (_) {}
+        }
+        return const ProfileResult(success: true);
+      }
+      return ProfileResult(success: false, message: 'Upload failed (${response.statusCode})');
+    } catch (e) {
+      AppLogger.log('[ProfileService] avatar upload exception: $e');
+      final isCors = kIsWeb && e.toString().contains('XMLHttpRequest');
+      return ProfileResult(
+        success: false,
+        message: isCors
+            ? 'Cannot upload avatar on web — server CORS policy blocks this request'
+            : 'Failed to upload avatar',
       );
     }
   }

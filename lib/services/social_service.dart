@@ -10,6 +10,13 @@ class LikeResult {
   const LikeResult({required this.success, this.message, this.newCount});
 }
 
+class FollowResult {
+  final bool success;
+  final String? message;
+
+  const FollowResult({required this.success, this.message});
+}
+
 class SocialService {
   static Map<String, String> _headers(String authToken) => {
         'Accept': 'application/json',
@@ -57,6 +64,38 @@ class SocialService {
     } catch (e) {
       AppLogger.log('[SocialService] unlikeMedia exception: $e');
       return const LikeResult(success: false, message: 'Network error');
+    }
+  }
+
+  static Future<FollowResult> followUser(String username, String authToken) async {
+    try {
+      final uri = Uri.parse('https://nolla.net/api/v1/users/$username/follow');
+      AppLogger.log('[SocialService] POST $uri');
+      final response = await http.post(uri, headers: _headers(authToken)).timeout(const Duration(seconds: 10));
+      AppLogger.log('[SocialService] follow status=${response.statusCode}');
+      if (response.statusCode == 200 || response.statusCode == 201 || response.statusCode == 204) {
+        return const FollowResult(success: true);
+      }
+      return FollowResult(success: false, message: 'Failed (${response.statusCode})');
+    } catch (e) {
+      AppLogger.log('[SocialService] followUser exception: $e');
+      return const FollowResult(success: false, message: 'Network error');
+    }
+  }
+
+  static Future<FollowResult> unfollowUser(String username, String authToken) async {
+    try {
+      final uri = Uri.parse('https://nolla.net/api/v1/users/$username/follow');
+      AppLogger.log('[SocialService] DELETE $uri');
+      final response = await http.delete(uri, headers: _headers(authToken)).timeout(const Duration(seconds: 10));
+      AppLogger.log('[SocialService] unfollow status=${response.statusCode}');
+      if (response.statusCode == 200 || response.statusCode == 204) {
+        return const FollowResult(success: true);
+      }
+      return FollowResult(success: false, message: 'Failed (${response.statusCode})');
+    } catch (e) {
+      AppLogger.log('[SocialService] unfollowUser exception: $e');
+      return const FollowResult(success: false, message: 'Network error');
     }
   }
 }

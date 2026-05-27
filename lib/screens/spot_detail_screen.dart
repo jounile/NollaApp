@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/spot_detail.dart';
 import '../services/spot_service.dart';
 import '../utils/spot_utils.dart';
+import 'user_profile_screen.dart';
 
 class SpotDetailScreen extends StatefulWidget {
   final int spotId;
@@ -59,7 +60,7 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _spot != null
-              ? _SpotDetailBody(spot: _spot!, theme: theme)
+              ? _SpotDetailBody(spot: _spot!, theme: theme, authToken: widget.authToken)
               : _FallbackBody(
                   type: widget.spotType,
                   distance: widget.spotDistance,
@@ -136,8 +137,9 @@ class _FallbackBody extends StatelessWidget {
 class _SpotDetailBody extends StatelessWidget {
   final SpotDetail spot;
   final ThemeData theme;
+  final String authToken;
 
-  const _SpotDetailBody({required this.spot, required this.theme});
+  const _SpotDetailBody({required this.spot, required this.theme, required this.authToken});
 
   @override
   Widget build(BuildContext context) {
@@ -180,9 +182,23 @@ class _SpotDetailBody extends StatelessWidget {
             children: [
               Icon(Icons.person_outline, size: 16, color: theme.colorScheme.onSurfaceVariant),
               const SizedBox(width: 6),
-              Text(
-                'Added by ${spot.createdBy}',
-                style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+              GestureDetector(
+                onTap: () => Navigator.push<void>(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => UserProfileScreen(
+                      username: spot.createdBy!,
+                      authToken: authToken,
+                    ),
+                  ),
+                ),
+                child: Text(
+                  'Added by ${spot.createdBy}',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.primary,
+                    decoration: TextDecoration.underline,
+                  ),
+                ),
               ),
             ],
           ),

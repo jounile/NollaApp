@@ -3,6 +3,7 @@ import '../models/media_item.dart';
 import '../services/app_logger.dart';
 import '../services/feed_service.dart';
 import '../services/social_service.dart';
+import '../widgets/comments_sheet.dart';
 import 'user_profile_screen.dart';
 
 class FeedScreen extends StatefulWidget {
@@ -18,6 +19,7 @@ class FeedScreen extends StatefulWidget {
 class _FeedScreenState extends State<FeedScreen> {
   final List<MediaItem> _items = [];
   final Set<int> _likingIds = {};
+  final Set<int> _expandedIds = {};
   bool _isLoading = true;
   bool _isFetchingMore = false;
   bool _hasMore = false;
@@ -98,6 +100,21 @@ class _FeedScreenState extends State<FeedScreen> {
     });
   }
 
+  Future<void> _openComments(int index) async {
+    final item = _items[index];
+    final newCount = await showCommentsSheet(
+      context,
+      item.id,
+      item.commentCount,
+      widget.authToken,
+    );
+    if (!mounted) return;
+    if (newCount != null && newCount != item.commentCount) {
+      final i = _items.indexWhere((e) => e.id == item.id);
+      if (i != -1) setState(() => _items[i] = _items[i].copyWith(commentCount: newCount));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -108,7 +125,7 @@ class _FeedScreenState extends State<FeedScreen> {
           IconButton(
             icon: const Icon(Icons.terminal),
             tooltip: 'View logs',
-            onPressed: () => showLogViewer(context, filter: const ['[FeedService]', '[SocialService]']),
+            onPressed: () => showLogViewer(context, filter: const ['[FeedService]', '[SocialService]', '[CommentService]']),
           ),
           IconButton(
             icon: const Icon(Icons.refresh),
@@ -128,33 +145,43 @@ class _FeedScreenState extends State<FeedScreen> {
             ),
           Expanded(
             child: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : _error != null && _items.isEmpty
-              ? _ErrorView(message: _error!, onRetry: () => _loadFeed(refresh: true))
-              : _items.isEmpty
-                  ? _EmptyView(username: widget.username, theme: theme)
-                  : RefreshIndicator(
-                      onRefresh: () => _loadFeed(refresh: true),
-                      child: ListView.builder(
-                        itemCount: _items.length + (_hasMore ? 1 : 0),
-                        itemBuilder: (ctx, i) {
-                          if (i == _items.length) {
-                            _loadMore();
-                            return const Padding(
-                              padding: EdgeInsets.all(16),
-                              child: Center(child: CircularProgressIndicator()),
-                            );
-                          }
-                          return _MediaCard(
-                            item: _items[i],
-                            onLike: () => _toggleLike(i),
-                            isLiking: _likingIds.contains(_items[i].id),
-                            theme: theme,
-                            authToken: widget.authToken,
-                          );
-                        },
-                      ),
-                    ),
+                ? const Center(child: CircularProgressIndicator())
+                : _error != null && _items.isEmpty
+                    ? _ErrorView(message: _error!, onRetry: () => _loadFeed(refresh: true))
+                    : _items.isEmpty
+                        ? _EmptyView(username: widget.username, theme: theme)
+                        : RefreshIndicator(
+                            onRefresh: () => _loadFeed(refresh: true),
+                            child: ListView.builder(
+                              itemCount: _items.length + (_hasMore ? 1 : 0),
+                              itemBuilder: (ctx, i) {
+                                if (i == _items.length) {
+                                  _loadMore();
+                                  return const Padding(
+                                    padding: EdgeInsets.all(16),
+                                    child: Center(child: CircularProgressIndicator()),
+                                  );
+                                }
+                                return _MediaCard(
+                                  item: _items[i],
+                                  onLike: () => _toggleLike(i),
+                                  onComments: () => _openComments(i),
+                                  isLiking: _likingIds.contains(_items[i].id),
+                                  isExpanded: _expandedIds.contains(_items[i].id),
+                                  onExpandToggle: () => setState(() {
+                                    if (_expandedIds.contains(_items[i].id)) {
+                                      _expandedIds.remove(_items[i].id);
+                                    } else {
+                                      _expandedIds.add(_items[i].id);
+                                    }
+                                  }),
+                                  theme: theme,
+                                  authToken: widget.authToken,
+                                  currentUsername: widget.username,
+                                );
+                              },
+                            ),
+                          ),
           ),
         ],
       ),
@@ -239,15 +266,30 @@ class _ErrorView extends StatelessWidget {
 class _MediaCard extends StatelessWidget {
   final MediaItem item;
   final VoidCallback onLike;
+  final VoidCallback onComments;
   final bool isLiking;
+  final bool isExpanded;
+  final VoidCallback onExpandToggle;
   final ThemeData theme;
   final String authToken;
+  final String currentUsername;
 
-  const _MediaCard({required this.item, required this.onLike, required this.isLiking, required this.theme, required this.authToken});
+  const _MediaCard({
+    required this.item,
+    required this.onLike,
+    required this.onComments,
+    required this.isLiking,
+    required this.isExpanded,
+    required this.onExpandToggle,
+    required this.theme,
+    required this.authToken,
+    required this.currentUsername,
+  });
 
   @override
   Widget build(BuildContext context) {
     final displayUrl = item.thumbnailUrl ?? item.url;
+    final hasLongDescription = item.description != null && item.description!.isNotEmpty;
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       clipBehavior: Clip.antiAlias,
@@ -284,6 +326,7 @@ class _MediaCard extends StatelessWidget {
                               builder: (_) => UserProfileScreen(
                                 username: item.uploaderUsername,
                                 authToken: authToken,
+                                currentUsername: currentUsername,
                               ),
                             ),
                           )
@@ -309,6 +352,7 @@ class _MediaCard extends StatelessWidget {
                                 builder: (_) => UserProfileScreen(
                                   username: item.uploaderUsername,
                                   authToken: authToken,
+                                  currentUsername: currentUsername,
                                 ),
                               ),
                             )
@@ -341,10 +385,31 @@ class _MediaCard extends StatelessWidget {
               ],
             ),
           ),
-          if (item.description != null && item.description!.isNotEmpty)
+          if (hasLongDescription)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-              child: Text(item.description!, style: theme.textTheme.bodyMedium, maxLines: 2, overflow: TextOverflow.ellipsis),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    item.description!,
+                    style: theme.textTheme.bodyMedium,
+                    maxLines: isExpanded ? null : 2,
+                    overflow: isExpanded ? TextOverflow.visible : TextOverflow.ellipsis,
+                  ),
+                  if (!isExpanded)
+                    GestureDetector(
+                      onTap: onExpandToggle,
+                      child: Text(
+                        'more',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.primary,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
             ),
           Padding(
             padding: const EdgeInsets.fromLTRB(4, 0, 12, 8),
@@ -361,11 +426,22 @@ class _MediaCard extends StatelessWidget {
                 if (item.likeCount > 0)
                   Text('${item.likeCount}', style: theme.textTheme.bodySmall),
                 const SizedBox(width: 8),
-                Icon(Icons.comment_outlined, size: 20, color: theme.colorScheme.onSurfaceVariant),
-                if (item.commentCount > 0) ...[
-                  const SizedBox(width: 4),
-                  Text('${item.commentCount}', style: theme.textTheme.bodySmall),
-                ],
+                InkWell(
+                  onTap: onComments,
+                  borderRadius: BorderRadius.circular(20),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                    child: Row(
+                      children: [
+                        Icon(Icons.comment_outlined, size: 20, color: theme.colorScheme.onSurfaceVariant),
+                        if (item.commentCount > 0) ...[
+                          const SizedBox(width: 4),
+                          Text('${item.commentCount}', style: theme.textTheme.bodySmall),
+                        ],
+                      ],
+                    ),
+                  ),
+                ),
               ],
             ),
           ),
