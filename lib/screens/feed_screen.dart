@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
-import '../models/article.dart';
 import '../models/media_item.dart';
 import '../services/app_logger.dart';
-import '../services/article_service.dart';
 import '../services/feed_service.dart';
 import '../services/social_service.dart';
 import '../widgets/comments_sheet.dart';
@@ -20,7 +18,6 @@ class FeedScreen extends StatefulWidget {
 
 class _FeedScreenState extends State<FeedScreen> {
   final List<MediaItem> _items = [];
-  final List<Article> _articles = [];
   final Set<int> _likingIds = {};
   final Set<int> _expandedIds = {};
   bool _isLoading = true;
@@ -34,19 +31,6 @@ class _FeedScreenState extends State<FeedScreen> {
   void initState() {
     super.initState();
     _loadFeed(refresh: true);
-    _loadArticles();
-  }
-
-  Future<void> _loadArticles({bool refresh = false}) async {
-    final result = await ArticleService.fetchArticles(authToken: widget.authToken);
-    if (!mounted) return;
-    setState(() {
-      if (result.success) {
-        _articles
-          ..clear()
-          ..addAll(result.articles);
-      }
-    });
   }
 
   Future<void> _loadFeed({bool refresh = false}) async {
@@ -131,23 +115,6 @@ class _FeedScreenState extends State<FeedScreen> {
     }
   }
 
-  List<Object> _buildCombinedList() {
-    final articlesWithImages = _articles
-        .where((a) => a.imageUrl != null && a.imageUrl!.isNotEmpty)
-        .toList();
-    if (articlesWithImages.isEmpty) return List<Object>.from(_items);
-    final combined = <Object>[];
-    int articleIndex = 0;
-    for (int i = 0; i < _items.length; i++) {
-      combined.add(_items[i]);
-      if ((i + 1) % 3 == 0) {
-        combined.add(articlesWithImages[articleIndex % articlesWithImages.length]);
-        articleIndex++;
-      }
-    }
-    return combined;
-  }
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -184,46 +151,33 @@ class _FeedScreenState extends State<FeedScreen> {
                     : _items.isEmpty
                         ? _EmptyView(username: widget.username, theme: theme)
                         : RefreshIndicator(
-                            onRefresh: () async {
-                              await Future.wait([_loadFeed(refresh: true), _loadArticles(refresh: true)]);
-                            },
-                            child: Builder(
-                              builder: (ctx) {
-                                final combined = _buildCombinedList();
-                                return ListView.builder(
-                                  itemCount: combined.length + (_hasMore ? 1 : 0),
-                                  itemBuilder: (ctx, i) {
-                                    if (i == combined.length) {
-                                      _loadMore();
-                                      return const Padding(
-                                        padding: EdgeInsets.all(16),
-                                        child: Center(child: CircularProgressIndicator()),
-                                      );
+                            onRefresh: () => _loadFeed(refresh: true),
+                            child: ListView.builder(
+                              itemCount: _items.length + (_hasMore ? 1 : 0),
+                              itemBuilder: (ctx, i) {
+                                if (i == _items.length) {
+                                  _loadMore();
+                                  return const Padding(
+                                    padding: EdgeInsets.all(16),
+                                    child: Center(child: CircularProgressIndicator()),
+                                  );
+                                }
+                                return _MediaCard(
+                                  item: _items[i],
+                                  onLike: () => _toggleLike(i),
+                                  onComments: () => _openComments(i),
+                                  isLiking: _likingIds.contains(_items[i].id),
+                                  isExpanded: _expandedIds.contains(_items[i].id),
+                                  onExpandToggle: () => setState(() {
+                                    if (_expandedIds.contains(_items[i].id)) {
+                                      _expandedIds.remove(_items[i].id);
+                                    } else {
+                                      _expandedIds.add(_items[i].id);
                                     }
-                                    final entry = combined[i];
-                                    if (entry is Article) {
-                                      return _AiImageCard(article: entry, theme: theme);
-                                    }
-                                    final item = entry as MediaItem;
-                                    final mediaIndex = _items.indexOf(item);
-                                    return _MediaCard(
-                                      item: item,
-                                      onLike: () => _toggleLike(mediaIndex),
-                                      onComments: () => _openComments(mediaIndex),
-                                      isLiking: _likingIds.contains(item.id),
-                                      isExpanded: _expandedIds.contains(item.id),
-                                      onExpandToggle: () => setState(() {
-                                        if (_expandedIds.contains(item.id)) {
-                                          _expandedIds.remove(item.id);
-                                        } else {
-                                          _expandedIds.add(item.id);
-                                        }
-                                      }),
-                                      theme: theme,
-                                      authToken: widget.authToken,
-                                      currentUsername: widget.username,
-                                    );
-                                  },
+                                  }),
+                                  theme: theme,
+                                  authToken: widget.authToken,
+                                  currentUsername: widget.username,
                                 );
                               },
                             ),
@@ -492,138 +446,6 @@ class _MediaCard extends StatelessWidget {
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _AiImageCard extends StatelessWidget {
-  final Article article;
-  final ThemeData theme;
-
-  const _AiImageCard({required this.article, required this.theme});
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: article.articleUrl != null ? () => _openArticle(context, article) : null,
-        child: Stack(
-          children: [
-            AspectRatio(
-              aspectRatio: 16 / 9,
-              child: Image.network(
-                article.imageUrl!,
-                fit: BoxFit.cover,
-                loadingBuilder: (ctx, child, progress) => progress == null
-                    ? child
-                    : Container(
-                        color: theme.colorScheme.surfaceContainerHighest,
-                        child: const Center(child: CircularProgressIndicator()),
-                      ),
-                errorBuilder: (_, __, ___) => Container(
-                  color: theme.colorScheme.surfaceContainerHighest,
-                  child: const Center(child: Icon(Icons.broken_image_outlined, size: 40)),
-                ),
-              ),
-            ),
-            Positioned(
-              bottom: 8,
-              left: 8,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: Colors.black54,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Text(
-                  'AI Image',
-                  style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w500),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _openArticle(BuildContext context, Article article) {
-    showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      builder: (ctx) => DraggableScrollableSheet(
-        initialChildSize: 0.7,
-        minChildSize: 0.4,
-        maxChildSize: 0.95,
-        expand: false,
-        builder: (_, controller) => Column(
-          children: [
-            const SizedBox(height: 8),
-            Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(2))),
-            Expanded(
-              child: SingleChildScrollView(
-                controller: controller,
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    if (article.imageUrl != null && article.imageUrl!.isNotEmpty)
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(12),
-                        child: AspectRatio(
-                          aspectRatio: 16 / 9,
-                          child: Image.network(
-                            article.imageUrl!,
-                            fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) => Container(
-                              color: Theme.of(ctx).colorScheme.surfaceContainerHighest,
-                              child: const Center(child: Icon(Icons.article_outlined, size: 40)),
-                            ),
-                          ),
-                        ),
-                      ),
-                    const SizedBox(height: 16),
-                    Text(article.title, style: Theme.of(ctx).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold)),
-                    if (article.author != null) ...[
-                      const SizedBox(height: 4),
-                      Text(
-                        article.author!,
-                        style: Theme.of(ctx).textTheme.bodySmall?.copyWith(color: Theme.of(ctx).colorScheme.primary),
-                      ),
-                    ],
-                    if (article.publishedAt != null) ...[
-                      const SizedBox(height: 2),
-                      Text(
-                        _relativeTime(article.publishedAt),
-                        style: Theme.of(ctx).textTheme.bodySmall?.copyWith(color: Theme.of(ctx).colorScheme.onSurfaceVariant),
-                      ),
-                    ],
-                    if (article.excerpt != null) ...[
-                      const SizedBox(height: 16),
-                      Text(article.excerpt!, style: Theme.of(ctx).textTheme.bodyMedium),
-                    ],
-                    if (article.articleUrl != null) ...[
-                      const SizedBox(height: 24),
-                      Text(
-                        article.articleUrl!,
-                        style: Theme.of(ctx).textTheme.bodySmall?.copyWith(
-                          color: Theme.of(ctx).colorScheme.primary,
-                          decoration: TextDecoration.underline,
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }
