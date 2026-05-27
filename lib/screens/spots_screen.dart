@@ -156,7 +156,12 @@ class _SpotsScreenState extends State<SpotsScreen> {
         _hasApiError = true;
       } else if (result.isNotEmpty) {
         const distCalc = Distance();
-        final mapped = result.map((s) {
+        final mapped = result
+            .where((s) =>
+                s.latitude.isFinite &&
+                s.longitude.isFinite &&
+                !(s.latitude == 0.0 && s.longitude == 0.0))
+            .map((s) {
           final spotLatLng = LatLng(s.latitude, s.longitude);
           final distMeters = s.distance ?? distCalc.as(LengthUnit.Meter, center, spotLatLng);
           return _Spot(
