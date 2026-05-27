@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import '../models/article.dart';
 import '../models/media_item.dart';
 import '../services/app_logger.dart';
+import '../services/article_service.dart';
 import '../services/feed_service.dart';
 import '../services/social_service.dart';
 import '../widgets/comments_sheet.dart';
@@ -18,12 +20,14 @@ class FeedScreen extends StatefulWidget {
 
 class _FeedScreenState extends State<FeedScreen> {
   final List<MediaItem> _items = [];
+  final List<Article> _articles = [];
   final Set<int> _likingIds = {};
   final Set<int> _expandedIds = {};
   bool _isLoading = true;
   bool _isFetchingMore = false;
   bool _hasMore = false;
   bool _isMockData = false;
+  bool _articlesLoading = true;
   int _page = 1;
   String? _error;
 
@@ -31,6 +35,19 @@ class _FeedScreenState extends State<FeedScreen> {
   void initState() {
     super.initState();
     _loadFeed(refresh: true);
+    _loadArticles();
+  }
+
+  Future<void> _loadArticles({bool refresh = false}) async {
+    if (refresh) setState(() => _articlesLoading = true);
+    final result = await ArticleService.fetchArticles(authToken: widget.authToken);
+    if (!mounted) return;
+    setState(() {
+      _articlesLoading = false;
+      if (result.success) _articles
+        ..clear()
+        ..addAll(result.articles);
+    });
   }
 
   Future<void> _loadFeed({bool refresh = false}) async {
@@ -151,11 +168,22 @@ class _FeedScreenState extends State<FeedScreen> {
                     : _items.isEmpty
                         ? _EmptyView(username: widget.username, theme: theme)
                         : RefreshIndicator(
-                            onRefresh: () => _loadFeed(refresh: true),
+                            onRefresh: () async {
+                              await Future.wait([_loadFeed(refresh: true), _loadArticles(refresh: true)]);
+                            },
                             child: ListView.builder(
-                              itemCount: _items.length + (_hasMore ? 1 : 0),
+                              itemCount: _items.length + (_hasMore ? 1 : 0) + 1,
                               itemBuilder: (ctx, i) {
-                                if (i == _items.length) {
+                                // First item: articles row
+                                if (i == 0) {
+                                  return _ArticlesRow(
+                                    articles: _articles,
+                                    loading: _articlesLoading,
+                                    theme: theme,
+                                  );
+                                }
+                                final mediaIndex = i - 1;
+                                if (mediaIndex == _items.length) {
                                   _loadMore();
                                   return const Padding(
                                     padding: EdgeInsets.all(16),
@@ -163,16 +191,16 @@ class _FeedScreenState extends State<FeedScreen> {
                                   );
                                 }
                                 return _MediaCard(
-                                  item: _items[i],
-                                  onLike: () => _toggleLike(i),
-                                  onComments: () => _openComments(i),
-                                  isLiking: _likingIds.contains(_items[i].id),
-                                  isExpanded: _expandedIds.contains(_items[i].id),
+                                  item: _items[mediaIndex],
+                                  onLike: () => _toggleLike(mediaIndex),
+                                  onComments: () => _openComments(mediaIndex),
+                                  isLiking: _likingIds.contains(_items[mediaIndex].id),
+                                  isExpanded: _expandedIds.contains(_items[mediaIndex].id),
                                   onExpandToggle: () => setState(() {
-                                    if (_expandedIds.contains(_items[i].id)) {
-                                      _expandedIds.remove(_items[i].id);
+                                    if (_expandedIds.contains(_items[mediaIndex].id)) {
+                                      _expandedIds.remove(_items[mediaIndex].id);
                                     } else {
-                                      _expandedIds.add(_items[i].id);
+                                      _expandedIds.add(_items[mediaIndex].id);
                                     }
                                   }),
                                   theme: theme,
@@ -446,6 +474,244 @@ class _MediaCard extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _ArticlesRow extends StatelessWidget {
+  final List<Article> articles;
+  final bool loading;
+  final ThemeData theme;
+
+  const _ArticlesRow({required this.articles, required this.loading, required this.theme});
+
+  @override
+  Widget build(BuildContext context) {
+    if (!loading && articles.isEmpty) return const SizedBox.shrink();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+          child: Text(
+            'From nolla.net',
+            style: theme.textTheme.titleSmall?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ),
+        SizedBox(
+          height: 220,
+          child: loading
+              ? ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  itemCount: 3,
+                  itemBuilder: (_, __) => _ArticleCardSkeleton(theme: theme),
+                )
+              : ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  itemCount: articles.length,
+                  itemBuilder: (ctx, i) => _ArticleCard(article: articles[i], theme: theme),
+                ),
+        ),
+        const SizedBox(height: 8),
+        const Divider(height: 1),
+      ],
+    );
+  }
+}
+
+class _ArticleCard extends StatelessWidget {
+  final Article article;
+  final ThemeData theme;
+
+  const _ArticleCard({required this.article, required this.theme});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 180,
+      margin: const EdgeInsets.only(right: 12),
+      child: Card(
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: article.articleUrl != null
+              ? () => _openArticle(context, article)
+              : null,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SizedBox(
+                height: 110,
+                child: article.imageUrl != null && article.imageUrl!.isNotEmpty
+                    ? Image.network(
+                        article.imageUrl!,
+                        fit: BoxFit.cover,
+                        width: double.infinity,
+                        loadingBuilder: (ctx, child, progress) => progress == null
+                            ? child
+                            : Container(
+                                color: theme.colorScheme.surfaceContainerHighest,
+                                child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+                              ),
+                        errorBuilder: (_, __, ___) => Container(
+                          color: theme.colorScheme.surfaceContainerHighest,
+                          child: Center(
+                            child: Icon(Icons.article_outlined, size: 32, color: theme.colorScheme.onSurfaceVariant),
+                          ),
+                        ),
+                      )
+                    : Container(
+                        color: theme.colorScheme.surfaceContainerHighest,
+                        child: Center(
+                          child: Icon(Icons.article_outlined, size: 32, color: theme.colorScheme.onSurfaceVariant),
+                        ),
+                      ),
+              ),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.all(8),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        article.title,
+                        style: theme.textTheme.labelMedium?.copyWith(fontWeight: FontWeight.bold),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      if (article.author != null) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          article.author!,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _openArticle(BuildContext context, Article article) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (ctx) => DraggableScrollableSheet(
+        initialChildSize: 0.7,
+        minChildSize: 0.4,
+        maxChildSize: 0.95,
+        expand: false,
+        builder: (_, controller) => Column(
+          children: [
+            const SizedBox(height: 8),
+            Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(2))),
+            Expanded(
+              child: SingleChildScrollView(
+                controller: controller,
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (article.imageUrl != null && article.imageUrl!.isNotEmpty)
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: AspectRatio(
+                          aspectRatio: 16 / 9,
+                          child: Image.network(
+                            article.imageUrl!,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => Container(
+                              color: Theme.of(ctx).colorScheme.surfaceContainerHighest,
+                              child: const Center(child: Icon(Icons.article_outlined, size: 40)),
+                            ),
+                          ),
+                        ),
+                      ),
+                    const SizedBox(height: 16),
+                    Text(article.title, style: Theme.of(ctx).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold)),
+                    if (article.author != null) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        article.author!,
+                        style: Theme.of(ctx).textTheme.bodySmall?.copyWith(color: Theme.of(ctx).colorScheme.primary),
+                      ),
+                    ],
+                    if (article.publishedAt != null) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        _relativeTime(article.publishedAt),
+                        style: Theme.of(ctx).textTheme.bodySmall?.copyWith(color: Theme.of(ctx).colorScheme.onSurfaceVariant),
+                      ),
+                    ],
+                    if (article.excerpt != null) ...[
+                      const SizedBox(height: 16),
+                      Text(article.excerpt!, style: Theme.of(ctx).textTheme.bodyMedium),
+                    ],
+                    if (article.articleUrl != null) ...[
+                      const SizedBox(height: 24),
+                      Text(
+                        article.articleUrl!,
+                        style: Theme.of(ctx).textTheme.bodySmall?.copyWith(
+                          color: Theme.of(ctx).colorScheme.primary,
+                          decoration: TextDecoration.underline,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ArticleCardSkeleton extends StatelessWidget {
+  final ThemeData theme;
+  const _ArticleCardSkeleton({required this.theme});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 180,
+      margin: const EdgeInsets.only(right: 12),
+      child: Card(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(height: 110, color: theme.colorScheme.surfaceContainerHighest),
+            Padding(
+              padding: const EdgeInsets.all(8),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(height: 12, width: 140, color: theme.colorScheme.surfaceContainerHighest),
+                  const SizedBox(height: 6),
+                  Container(height: 12, width: 100, color: theme.colorScheme.surfaceContainerHighest),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
