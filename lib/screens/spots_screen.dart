@@ -8,6 +8,7 @@ import 'package:geolocator/geolocator.dart';
 import '../models/spot.dart';
 import 'create_spot_screen.dart';
 import 'spot_detail_screen.dart';
+import 'spot_deviations_screen.dart';
 import '../services/app_logger.dart';
 import '../services/spot_service.dart';
 import '../utils/spot_utils.dart';
@@ -369,6 +370,16 @@ class _SpotsScreenState extends State<SpotsScreen> {
                 _mapController.move(result.latLng, 15);
               }
             },
+          ),
+          IconButton(
+            icon: const Icon(Icons.troubleshoot),
+            tooltip: 'Data deviations',
+            onPressed: () => Navigator.push<void>(
+              context,
+              MaterialPageRoute(
+                builder: (_) => SpotDeviationsScreen(authToken: widget.authToken),
+              ),
+            ),
           ),
           IconButton(
             icon: const Icon(Icons.terminal),
