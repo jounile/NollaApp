@@ -46,7 +46,7 @@ class ArticleService {
           final raw = body['articles'] ?? body['data'] ?? body['items'] ?? body['results'];
           list = raw is List ? raw : [];
         } else {
-          return ArticleResult(success: true, articles: mockArticles, isMockData: true);
+          return const ArticleResult(success: true, articles: mockArticles, isMockData: true);
         }
         final articles = <Article>[];
         for (final e in list) {
@@ -57,23 +57,23 @@ class ArticleService {
           }
         }
         if (articles.isEmpty) {
-          return ArticleResult(success: true, articles: mockArticles, isMockData: true);
+          return const ArticleResult(success: true, articles: mockArticles, isMockData: true);
         }
         return ArticleResult(success: true, articles: articles);
       }
 
       if (kIsWeb) {
         AppLogger.log('[ArticleService] API error (${response.statusCode}) — using mock articles');
-        return ArticleResult(success: true, articles: mockArticles, isMockData: true);
+        return const ArticleResult(success: true, articles: mockArticles, isMockData: true);
       }
       return const ArticleResult(success: false);
     } catch (e) {
       AppLogger.log('[ArticleService] exception: $e');
       if (_isCors(e)) {
         AppLogger.log('[ArticleService] CORS — using mock articles');
-        return ArticleResult(success: true, articles: mockArticles, isMockData: true);
+        return const ArticleResult(success: true, articles: mockArticles, isMockData: true);
       }
-      return ArticleResult(success: true, articles: mockArticles, isMockData: true);
+      return const ArticleResult(success: true, articles: mockArticles, isMockData: true);
     }
   }
 }

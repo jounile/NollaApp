@@ -151,6 +151,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   onTap: widget.onNavigate != null ? () => widget.onNavigate!(3) : null,
                 ),
               ],
+              ),
             ),
           ),
         ),

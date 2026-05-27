@@ -44,9 +44,11 @@ class _FeedScreenState extends State<FeedScreen> {
     if (!mounted) return;
     setState(() {
       _articlesLoading = false;
-      if (result.success) _articles
-        ..clear()
-        ..addAll(result.articles);
+      if (result.success) {
+        _articles
+          ..clear()
+          ..addAll(result.articles);
+      }
     });
   }
 
