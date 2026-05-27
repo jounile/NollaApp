@@ -31809,7 +31809,7 @@ case 3:return"Missing name"
 case 4:return"Unknown type"
 case 5:return"Far from Helsinki"
 case 6:return"No distance"}},
-b6f(a){var s,r,q,p,o,n,m=A.b([],t.zi)
+b6f(a,b){var s,r,q,p,o,n,m=A.b([],t.zi)
 for(s=J.al(a),r=t.Ch;s.u();){q=s.gK(s)
 p=A.b([],r)
 o=q.c
@@ -31817,7 +31817,7 @@ if(o===0&&q.d===0)p.push(B.oH)
 else{if(o<-90||o>90)p.push(B.oI)
 n=q.d
 if(n<-180||n>180)p.push(B.oJ)
-if(B.nL.X1(0,B.JT,B.hQ,new A.ez(o,n))>100)p.push(B.Gy)}if(q.b==="Unknown")p.push(B.Gw)
+if(B.nL.X1(0,B.JT,b,new A.ez(o,n))>100)p.push(B.Gy)}if(q.b==="Unknown")p.push(B.Gw)
 if(!B.RE.t(0,q.e))p.push(B.Gx)
 if(q.f==null)p.push(B.Gz)
 if(p.length!==0)m.push(new A.Td(q,p))}return m},
@@ -102499,7 +102499,7 @@ if(p.c==null){s=1
 break}if(o==null){p.M(new A.aAO(p))
 A.b8("[SpotDeviations] fetch failed")
 s=1
-break}n=A.b6f(o)
+break}n=A.b6f(o,B.hQ)
 A.b8("[SpotDeviations] "+n.length+" deviation(s) in "+J.bN(o)+" spots")
 p.M(new A.aAP(p,o,n))
 case 1:return A.E(q,r)}})
