@@ -219,7 +219,7 @@ class _SpotDetailBody extends StatelessWidget {
                   MaterialPageRoute(
                     builder: (_) => Scaffold(
                       backgroundColor: Colors.black,
-                      appBar: AppBar(backgroundColor: Colors.transparent, foregroundColor: Colors.white),
+                      appBar: const AppBar(backgroundColor: Colors.transparent, foregroundColor: Colors.white),
                       body: Center(
                         child: InteractiveViewer(
                           child: Image.network(spot.mediaUrls[i], fit: BoxFit.contain),
@@ -229,7 +229,7 @@ class _SpotDetailBody extends StatelessWidget {
                   ),
                 ),
                 child: ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: const BorderRadius.circular(8),
                   child: Image.network(
                     spot.mediaUrls[i],
                     width: 160,
@@ -268,7 +268,7 @@ class _TypeBadge extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           decoration: BoxDecoration(
             color: theme.colorScheme.secondaryContainer,
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: const BorderRadius.circular(20),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,

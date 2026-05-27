@@ -51,7 +51,7 @@ class _MediaScreenState extends State<MediaScreen> {
           _mediaItems.insert(0, _MediaItem(file: file, isVideo: false, fileSize: size));
         });
       }
-    } catch (e) {
+    } catch (_) {
       if (!mounted) return;
       _showError('Could not pick image. Please check permissions.');
     }
@@ -66,7 +66,7 @@ class _MediaScreenState extends State<MediaScreen> {
           _mediaItems.insert(0, _MediaItem(file: file, isVideo: true, fileSize: size));
         });
       }
-    } catch (e) {
+    } catch (_) {
       if (!mounted) return;
       _showError('Could not pick video. Please check permissions.');
     }
@@ -136,7 +136,7 @@ class _MediaScreenState extends State<MediaScreen> {
                 margin: const EdgeInsets.only(bottom: 16),
                 decoration: BoxDecoration(
                   color: Theme.of(ctx).colorScheme.outlineVariant,
-                  borderRadius: BorderRadius.circular(2),
+                  borderRadius: const BorderRadius.circular(2),
                 ),
               ),
               Text(
@@ -268,7 +268,7 @@ class _MediaTile extends StatelessWidget {
       fit: StackFit.expand,
       children: [
         ClipRRect(
-          borderRadius: BorderRadius.circular(4),
+          borderRadius: const BorderRadius.circular(4),
           child: item.isVideo
               ? Container(
                   color: Colors.black87,
@@ -293,7 +293,7 @@ class _MediaTile extends StatelessWidget {
           left: 4,
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-            decoration: BoxDecoration(
+            decoration: const BoxDecoration(
               color: Colors.black54,
               borderRadius: BorderRadius.circular(4),
             ),
@@ -305,7 +305,7 @@ class _MediaTile extends StatelessWidget {
         ),
         if (item.uploadStatus == UploadStatus.uploading)
           ClipRRect(
-            borderRadius: BorderRadius.circular(4),
+            borderRadius: const BorderRadius.circular(4),
             child: Container(
               color: Colors.black45,
               child: const Center(

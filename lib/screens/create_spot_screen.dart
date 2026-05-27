@@ -163,7 +163,7 @@ class _CreateSpotScreenState extends State<CreateSpotScreen> {
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
                 color: theme.colorScheme.surfaceContainerHighest,
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: const BorderRadius.circular(8),
               ),
               child: Row(
                 children: [

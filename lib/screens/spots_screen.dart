@@ -54,7 +54,7 @@ class _SpotsScreenState extends State<SpotsScreen> {
       _isLoading = true;
     });
 
-    bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    final bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) {
       if (!mounted) return;
       _applyFallback('Location services are disabled. Showing default location.');
@@ -92,7 +92,7 @@ class _SpotsScreenState extends State<SpotsScreen> {
       } else {
         _applyFallback('Could not get your location. Showing default location.');
       }
-    } catch (e) {
+    } catch (_) {
       if (!mounted) return;
       _applyFallback('Could not get your location. Showing default location.');
     }
@@ -420,7 +420,7 @@ class _SpotsScreenState extends State<SpotsScreen> {
                   left: 8,
                   child: Material(
                     elevation: 2,
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: const BorderRadius.circular(16),
                     child: Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                       child: _isFetchingSpots

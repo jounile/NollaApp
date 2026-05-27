@@ -30,7 +30,7 @@ class AuthService {
         final message = data['message'] as String? ?? 'Invalid credentials';
         return AuthResult(success: false, message: message);
       }
-    } catch (e) {
+    } catch (_) {
       return const AuthResult(
         success: false,
         message: 'Network error. Please check your connection.',

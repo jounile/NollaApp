@@ -53,7 +53,7 @@ class SpotService {
       if (response.statusCode == 200) {
         lastFetchWasMock = false;
         final body = jsonDecode(response.body);
-        List<dynamic> list;
+        final List<dynamic> list;
         if (body is List) {
           list = body;
         } else if (body is Map<String, dynamic>) {
@@ -185,7 +185,7 @@ class SpotService {
       final response = await http.get(uri, headers: headers).timeout(const Duration(seconds: 10));
       if (response.statusCode == 200) {
         final body = jsonDecode(response.body);
-        List<dynamic> list;
+        final List<dynamic> list;
         if (body is List) {
           list = body;
         } else if (body is Map<String, dynamic>) {
