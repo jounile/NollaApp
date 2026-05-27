@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import '../models/spot.dart';
 import '../models/spot_detail.dart';
 import '../models/new_spot.dart';
+import '../utils/mock_data.dart';
 import 'app_logger.dart';
 
 class SpotResult {
@@ -22,6 +23,7 @@ class SpotDetailResult {
 
 class SpotService {
   static const String _spotsUrl = 'https://nolla.net/api/v1/spots';
+  static bool lastFetchWasMock = false;
 
   // Returns null on network/API error, empty list when API succeeds but has no spots.
   static Future<List<Spot>?> fetchSpots({
@@ -49,8 +51,9 @@ class SpotService {
           .timeout(const Duration(seconds: 10));
       AppLogger.log('[SpotService] status=${response.statusCode} body=${response.body}');
       if (response.statusCode == 200) {
+        lastFetchWasMock = false;
         final body = jsonDecode(response.body);
-        List<dynamic> list;
+        final List<dynamic> list;
         if (body is List) {
           list = body;
         } else if (body is Map<String, dynamic>) {
@@ -92,8 +95,13 @@ class SpotService {
     } catch (e) {
       final isCors = kIsWeb && (e.toString().contains('XMLHttpRequest') || e.toString().contains('Load failed'));
       AppLogger.log(isCors
-          ? '[SpotService] CORS error — server must add Access-Control-Allow-Origin header'
+          ? '[SpotService] CORS error — returning mock spots for web preview'
           : '[SpotService] exception: $e');
+      if (isCors) {
+        lastFetchWasMock = true;
+        return List<Spot>.unmodifiable(mockSpots);
+      }
+      lastFetchWasMock = false;
       return null;
     }
   }
@@ -177,7 +185,7 @@ class SpotService {
       final response = await http.get(uri, headers: headers).timeout(const Duration(seconds: 10));
       if (response.statusCode == 200) {
         final body = jsonDecode(response.body);
-        List<dynamic> list;
+        final List<dynamic> list;
         if (body is List) {
           list = body;
         } else if (body is Map<String, dynamic>) {

@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'app_logger.dart';
 
@@ -15,6 +16,18 @@ class SocialService {
         'Authorization': 'Bearer $authToken',
       };
 
+  static int? _parseCount(http.Response response) {
+    try {
+      final body = jsonDecode(response.body);
+      if (body is Map) {
+        final raw = body['like_count'] ?? body['likes'] ?? body['count'];
+        if (raw is int) return raw;
+        if (raw is String) return int.tryParse(raw);
+      }
+    } catch (_) {}
+    return null;
+  }
+
   static Future<LikeResult> likeMedia(int mediaId, String authToken) async {
     try {
       final uri = Uri.parse('https://nolla.net/api/v1/media/$mediaId/like');
@@ -22,7 +35,7 @@ class SocialService {
       final response = await http.post(uri, headers: _headers(authToken)).timeout(const Duration(seconds: 10));
       AppLogger.log('[SocialService] like status=${response.statusCode}');
       if (response.statusCode == 200 || response.statusCode == 201 || response.statusCode == 204) {
-        return const LikeResult(success: true);
+        return LikeResult(success: true, newCount: _parseCount(response));
       }
       return LikeResult(success: false, message: 'Failed (${response.statusCode})');
     } catch (e) {
@@ -38,7 +51,7 @@ class SocialService {
       final response = await http.delete(uri, headers: _headers(authToken)).timeout(const Duration(seconds: 10));
       AppLogger.log('[SocialService] unlike status=${response.statusCode}');
       if (response.statusCode == 200 || response.statusCode == 204) {
-        return const LikeResult(success: true);
+        return LikeResult(success: true, newCount: _parseCount(response));
       }
       return LikeResult(success: false, message: 'Failed (${response.statusCode})');
     } catch (e) {

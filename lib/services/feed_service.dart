@@ -1,6 +1,8 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../models/media_item.dart';
+import '../utils/mock_data.dart';
 import 'app_logger.dart';
 
 class FeedResult {
@@ -8,12 +10,14 @@ class FeedResult {
   final String? message;
   final List<MediaItem> items;
   final bool hasMore;
+  final bool isMockData;
 
   const FeedResult({
     required this.success,
     this.message,
     this.items = const [],
     this.hasMore = false,
+    this.isMockData = false,
   });
 }
 
@@ -24,6 +28,9 @@ class FeedService {
         'Accept': 'application/json',
         'Authorization': 'Bearer $authToken',
       };
+
+  static bool _isCors(Object e) =>
+      kIsWeb && (e.toString().contains('XMLHttpRequest') || e.toString().contains('Load failed'));
 
   static Future<FeedResult> fetchFeed(String authToken, {int page = 1, int limit = 20}) async {
     try {
@@ -36,7 +43,7 @@ class FeedService {
       AppLogger.log('[FeedService] status=${response.statusCode}');
       if (response.statusCode == 200) {
         final body = jsonDecode(response.body);
-        List<dynamic> list;
+        final List<dynamic> list;
         bool hasMore = false;
         if (body is List) {
           list = body;
@@ -69,7 +76,11 @@ class FeedService {
       return FeedResult(success: false, message: 'Failed to load feed (${response.statusCode})');
     } catch (e) {
       AppLogger.log('[FeedService] exception: $e');
-      return FeedResult(success: false, message: 'Network error');
+      if (_isCors(e)) {
+        AppLogger.log('[FeedService] CORS error — returning mock data for web preview');
+        return FeedResult(success: true, items: List.unmodifiable(mockFeedItems), isMockData: true);
+      }
+      return const FeedResult(success: false, message: 'Network error');
     }
   }
 
@@ -80,7 +91,7 @@ class FeedService {
       final response = await http.get(uri, headers: _headers(authToken)).timeout(const Duration(seconds: 10));
       if (response.statusCode == 200) {
         final body = jsonDecode(response.body);
-        List<dynamic> list;
+        final List<dynamic> list;
         if (body is List) {
           list = body;
         } else if (body is Map<String, dynamic>) {

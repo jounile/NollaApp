@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'home_screen.dart';
 import 'feed_screen.dart';
 import 'spots_screen.dart';
 import 'media_screen.dart';
@@ -20,6 +21,10 @@ class _MainScreenState extends State<MainScreen> {
   int _selectedIndex = 0;
 
   late final List<Widget> _pages = [
+    HomeScreen(
+      username: widget.username,
+      onNavigate: (i) => setState(() => _selectedIndex = i),
+    ),
     FeedScreen(username: widget.username, authToken: widget.authToken),
     SpotsScreen(authToken: widget.authToken),
     MediaScreen(authToken: widget.authToken),
@@ -27,7 +32,7 @@ class _MainScreenState extends State<MainScreen> {
   ];
 
   void _onItemTapped(int index) {
-    if (index == 4) {
+    if (index == 5) {
       _confirmLogout();
       return;
     }
@@ -48,9 +53,9 @@ class _MainScreenState extends State<MainScreen> {
           FilledButton(
             onPressed: () async {
               Navigator.pop(ctx);
+              final nav = Navigator.of(context);
               await SessionService.clear();
-              if (!context.mounted) return;
-              Navigator.of(context).pushAndRemoveUntil(
+              nav.pushAndRemoveUntil(
                 MaterialPageRoute<void>(
                   builder: (_) => const LoginScreen(),
                 ),
@@ -75,6 +80,11 @@ class _MainScreenState extends State<MainScreen> {
         selectedIndex: _selectedIndex,
         onDestinationSelected: _onItemTapped,
         destinations: const [
+          NavigationDestination(
+            icon: Icon(Icons.home_outlined),
+            selectedIcon: Icon(Icons.home),
+            label: 'Home',
+          ),
           NavigationDestination(
             icon: Icon(Icons.dynamic_feed_outlined),
             selectedIcon: Icon(Icons.dynamic_feed),

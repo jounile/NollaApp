@@ -10,6 +10,7 @@ import 'create_spot_screen.dart';
 import 'spot_detail_screen.dart';
 import '../services/app_logger.dart';
 import '../services/spot_service.dart';
+import '../utils/spot_utils.dart';
 
 class SpotsScreen extends StatefulWidget {
   final String authToken;
@@ -32,6 +33,7 @@ class _SpotsScreenState extends State<SpotsScreen> {
   bool _isLoading = true;
   bool _isFetchingSpots = false;
   bool _hasApiError = false;
+  bool _isMockData = false;
 
   final List<_Spot> _spots = [];
 
@@ -52,7 +54,7 @@ class _SpotsScreenState extends State<SpotsScreen> {
       _isLoading = true;
     });
 
-    bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    final bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) {
       if (!mounted) return;
       _applyFallback('Location services are disabled. Showing default location.');
@@ -90,7 +92,7 @@ class _SpotsScreenState extends State<SpotsScreen> {
       } else {
         _applyFallback('Could not get your location. Showing default location.');
       }
-    } catch (e) {
+    } catch (_) {
       if (!mounted) return;
       _applyFallback('Could not get your location. Showing default location.');
     }
@@ -152,7 +154,7 @@ class _SpotsScreenState extends State<SpotsScreen> {
       if (result == null) {
         _hasApiError = true;
       } else if (result.isNotEmpty) {
-        final distCalc = const Distance();
+        const distCalc = Distance();
         final mapped = result.map((s) {
           final spotLatLng = LatLng(s.latitude, s.longitude);
           final distMeters = s.distance ?? distCalc.as(LengthUnit.Meter, center, spotLatLng);
@@ -160,7 +162,7 @@ class _SpotsScreenState extends State<SpotsScreen> {
             id: s.id,
             name: s.name,
             latLng: spotLatLng,
-            icon: _spotTypeToIcon(s.type),
+            icon: spotTypeToIcon(s.type),
             distanceMeters: distMeters,
             type: s.type,
           );
@@ -170,6 +172,7 @@ class _SpotsScreenState extends State<SpotsScreen> {
       }
       if (initialLoad) _isLoading = false;
       _isFetchingSpots = false;
+      _isMockData = SpotService.lastFetchWasMock;
     });
 
     if (moveMap) {
@@ -198,9 +201,7 @@ class _SpotsScreenState extends State<SpotsScreen> {
                       Text(spot.name, style: Theme.of(ctx).textTheme.titleLarge),
                       const SizedBox(height: 4),
                       Text(
-                        spot.distanceMeters < 1000
-                            ? '${spot.distanceMeters.round()} m away'
-                            : '${(spot.distanceMeters / 1000).toStringAsFixed(1)} km away',
+                        formatDistance(spot.distanceMeters),
                         style: Theme.of(ctx).textTheme.bodyMedium?.copyWith(
                               color: Theme.of(ctx).colorScheme.onSurfaceVariant,
                             ),
@@ -309,7 +310,17 @@ class _SpotsScreenState extends State<SpotsScreen> {
               },
               child: const Icon(Icons.add_location_alt_outlined),
             ),
-      body: _isLoading
+      body: Column(
+        children: [
+          if (_isMockData)
+            MaterialBanner(
+              content: const Text('Demo mode — showing sample spots (web preview)'),
+              leading: const Icon(Icons.info_outline),
+              actions: [TextButton(onPressed: () => setState(() => _isMockData = false), child: const Text('Dismiss'))],
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            ),
+          Expanded(
+            child: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : Stack(
               children: [
@@ -375,7 +386,8 @@ class _SpotsScreenState extends State<SpotsScreen> {
                             height: 44,
                             child: GestureDetector(
                               onTap: () => _showSpotInfo(spot),
-                              child: Container(
+                              behavior: HitTestBehavior.opaque,
+                              child: Center(child: Container(
                                 width: 36,
                                 height: 36,
                                 decoration: BoxDecoration(
@@ -394,13 +406,35 @@ class _SpotsScreenState extends State<SpotsScreen> {
                                   color: theme.colorScheme.onSecondary,
                                   size: 20,
                                 ),
-                              ),
+                              )),
                             ),
                           ),
                         ),
                       ],
                     ),
                   ],
+                ),
+
+                Positioned(
+                  top: 8,
+                  left: 8,
+                  child: Material(
+                    elevation: 2,
+                    borderRadius: BorderRadius.circular(16),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      child: _isFetchingSpots
+                          ? const SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : Text(
+                              '${_spots.length} spots',
+                              style: theme.textTheme.labelMedium,
+                            ),
+                    ),
+                  ),
                 ),
 
                 if (_hasApiError)
@@ -444,20 +478,10 @@ class _SpotsScreenState extends State<SpotsScreen> {
                   ),
               ],
             ),
+          ),
+        ],
+      ),
     );
-  }
-}
-
-IconData _spotTypeToIcon(String type) {
-  switch (type) {
-    case 'terrain':
-      return Icons.terrain;
-    case 'water':
-      return Icons.water;
-    case 'park':
-      return Icons.park;
-    default:
-      return Icons.place;
   }
 }
 
@@ -523,12 +547,10 @@ class _SpotSearchDelegate extends SearchDelegate<_Spot?> {
           itemBuilder: (_, i) {
             final s = results[i];
             return ListTile(
-              leading: Icon(_spotTypeToIcon(s.type)),
+              leading: Icon(spotTypeToIcon(s.type)),
               title: Text(s.name),
               subtitle: s.distance != null
-                  ? Text(s.distance! < 1000
-                      ? '${s.distance!.round()} m away'
-                      : '${(s.distance! / 1000).toStringAsFixed(1)} km away')
+                  ? Text(formatDistance(s.distance!))
                   : null,
               onTap: () => close(
                 context,
@@ -536,7 +558,7 @@ class _SpotSearchDelegate extends SearchDelegate<_Spot?> {
                   id: s.id,
                   name: s.name,
                   latLng: LatLng(s.latitude, s.longitude),
-                  icon: _spotTypeToIcon(s.type),
+                  icon: spotTypeToIcon(s.type),
                 ),
               ),
             );
