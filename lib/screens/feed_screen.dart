@@ -180,7 +180,7 @@ class _EmptyView extends StatelessWidget {
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
               color: theme.colorScheme.primaryContainer,
-              borderRadius: const BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(16),
             ),
             child: Column(
               children: [

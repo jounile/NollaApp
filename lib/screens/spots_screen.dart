@@ -154,7 +154,7 @@ class _SpotsScreenState extends State<SpotsScreen> {
       if (result == null) {
         _hasApiError = true;
       } else if (result.isNotEmpty) {
-        final distCalc = const Distance();
+        const distCalc = Distance();
         final mapped = result.map((s) {
           final spotLatLng = LatLng(s.latitude, s.longitude);
           final distMeters = s.distance ?? distCalc.as(LengthUnit.Meter, center, spotLatLng);
@@ -420,7 +420,7 @@ class _SpotsScreenState extends State<SpotsScreen> {
                   left: 8,
                   child: Material(
                     elevation: 2,
-                    borderRadius: const BorderRadius.circular(16),
+                    borderRadius: BorderRadius.circular(16),
                     child: Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                       child: _isFetchingSpots

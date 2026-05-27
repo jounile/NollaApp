@@ -53,9 +53,9 @@ class _MainScreenState extends State<MainScreen> {
           FilledButton(
             onPressed: () async {
               Navigator.pop(ctx);
+              final nav = Navigator.of(context);
               await SessionService.clear();
-              if (!context.mounted) return;
-              Navigator.of(context).pushAndRemoveUntil(
+              nav.pushAndRemoveUntil(
                 MaterialPageRoute<void>(
                   builder: (_) => const LoginScreen(),
                 ),

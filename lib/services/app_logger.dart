@@ -1,24 +1,23 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 class AppLogger {
   AppLogger._();
 
-  static final List<_LogEntry> _entries = [];
+  static final List<LogEntry> _entries = [];
 
   static void log(String message) {
-    final entry = _LogEntry(DateTime.now(), message);
+    final entry = LogEntry(DateTime.now(), message);
     _entries.insert(0, entry);
     if (_entries.length > 300) _entries.removeLast();
     debugPrint(message);
   }
 
-  static List<_LogEntry> get entries => List.unmodifiable(_entries);
+  static List<LogEntry> get entries => List.unmodifiable(_entries);
 
   /// Returns only entries whose message contains at least one of [tags].
   /// If [tags] is empty, returns all entries.
-  static List<_LogEntry> filteredEntries(List<String> tags) {
+  static List<LogEntry> filteredEntries(List<String> tags) {
     if (tags.isEmpty) return entries;
     return _entries.where((e) => tags.any((t) => e.message.contains(t))).toList();
   }
@@ -26,11 +25,11 @@ class AppLogger {
   static void clear() => _entries.clear();
 }
 
-class _LogEntry {
+class LogEntry {
   final DateTime timestamp;
   final String message;
 
-  _LogEntry(this.timestamp, this.message);
+  LogEntry(this.timestamp, this.message);
 
   String get formatted {
     final t = timestamp;

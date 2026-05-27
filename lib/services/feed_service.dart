@@ -80,7 +80,7 @@ class FeedService {
         AppLogger.log('[FeedService] CORS error — returning mock data for web preview');
         return FeedResult(success: true, items: List.unmodifiable(mockFeedItems), isMockData: true);
       }
-      return FeedResult(success: false, message: 'Network error');
+      return const FeedResult(success: false, message: 'Network error');
     }
   }
 

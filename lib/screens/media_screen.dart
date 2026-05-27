@@ -98,7 +98,7 @@ class _MediaScreenState extends State<MediaScreen> {
           item.uploadStatus = UploadStatus.failed;
         }
       });
-      if (!result.success) _showError(result.message ?? 'Upload failed');
+      if (!result.success) _showError(result.message);
     }
 
     if (mounted) setState(() => _isUploading = false);
@@ -136,7 +136,7 @@ class _MediaScreenState extends State<MediaScreen> {
                 margin: const EdgeInsets.only(bottom: 16),
                 decoration: BoxDecoration(
                   color: Theme.of(ctx).colorScheme.outlineVariant,
-                  borderRadius: const BorderRadius.circular(2),
+                  borderRadius: BorderRadius.circular(2),
                 ),
               ),
               Text(
@@ -268,7 +268,7 @@ class _MediaTile extends StatelessWidget {
       fit: StackFit.expand,
       children: [
         ClipRRect(
-          borderRadius: const BorderRadius.circular(4),
+          borderRadius: BorderRadius.circular(4),
           child: item.isVideo
               ? Container(
                   color: Colors.black87,
@@ -293,7 +293,7 @@ class _MediaTile extends StatelessWidget {
           left: 4,
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
               color: Colors.black54,
               borderRadius: BorderRadius.circular(4),
             ),
@@ -305,7 +305,7 @@ class _MediaTile extends StatelessWidget {
         ),
         if (item.uploadStatus == UploadStatus.uploading)
           ClipRRect(
-            borderRadius: const BorderRadius.circular(4),
+            borderRadius: BorderRadius.circular(4),
             child: Container(
               color: Colors.black45,
               child: const Center(
