@@ -434,6 +434,9 @@ class _SpotsScreenState extends State<SpotsScreen> {
                     initialZoom: 14,
                     minZoom: 3,
                     maxZoom: 19,
+                    onMapReady: () {
+                      if (mounted) setState(() {});
+                    },
                     onPositionChanged: (camera, hasGesture) {
                       if (hasGesture) {
                         final center = camera.center;
