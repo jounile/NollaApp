@@ -182,13 +182,107 @@ class _SpotsScreenState extends State<SpotsScreen> {
     }
   }
 
-  int _visibleSpotsCount() {
+  List<_Spot> _visibleSpots() {
     try {
       final bounds = _mapController.camera.visibleBounds;
-      return _spots.where((s) => bounds.contains(s.latLng)).length;
+      return _spots.where((s) => bounds.contains(s.latLng)).toList();
     } catch (_) {
-      return _spots.length;
+      return _spots;
     }
+  }
+
+  int _visibleSpotsCount() => _visibleSpots().length;
+
+  void _showSpotsList() {
+    final visible = _visibleSpots();
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (ctx) {
+        final theme = Theme.of(ctx);
+        return DraggableScrollableSheet(
+          initialChildSize: 0.5,
+          minChildSize: 0.3,
+          maxChildSize: 0.9,
+          expand: false,
+          builder: (_, scrollCtrl) => Column(
+            children: [
+              Container(
+                margin: const EdgeInsets.symmetric(vertical: 8),
+                width: 36,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.onSurfaceVariant.withOpacity(0.4),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+                child: Row(
+                  children: [
+                    Text(
+                      'Spots in view (${visible.length})',
+                      style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                    ),
+                    const Spacer(),
+                    IconButton(
+                      icon: const Icon(Icons.close),
+                      onPressed: () => Navigator.pop(ctx),
+                      visualDensity: VisualDensity.compact,
+                    ),
+                  ],
+                ),
+              ),
+              const Divider(height: 1),
+              Expanded(
+                child: visible.isEmpty
+                    ? Center(
+                        child: Text(
+                          'No spots in the current view.\nTry zooming out or panning the map.',
+                          textAlign: TextAlign.center,
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      )
+                    : ListView.builder(
+                        controller: scrollCtrl,
+                        itemCount: visible.length,
+                        itemBuilder: (_, i) {
+                          final spot = visible[i];
+                          return ListTile(
+                            leading: Icon(spot.icon, color: theme.colorScheme.primary),
+                            title: Text(spot.name),
+                            subtitle: Text(formatDistance(spot.distanceMeters)),
+                            trailing: const Icon(Icons.chevron_right),
+                            onTap: () {
+                              Navigator.pop(ctx);
+                              Navigator.push<void>(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => SpotDetailScreen(
+                                    spotId: spot.id,
+                                    spotName: spot.name,
+                                    authToken: widget.authToken,
+                                    spotType: spot.type,
+                                    spotDistance: spot.distanceMeters,
+                                  ),
+                                ),
+                              );
+                            },
+                          );
+                        },
+                      ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
   }
 
   void _showSpotInfo(_Spot spot) {
@@ -430,18 +524,33 @@ class _SpotsScreenState extends State<SpotsScreen> {
                   child: Material(
                     elevation: 2,
                     borderRadius: BorderRadius.circular(16),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                      child: _isFetchingSpots
-                          ? const SizedBox(
-                              width: 16,
-                              height: 16,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : Text(
-                              '${_visibleSpotsCount()} spots',
-                              style: theme.textTheme.labelMedium,
-                            ),
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(16),
+                      onTap: _isFetchingSpots ? null : _showSpotsList,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        child: _isFetchingSpots
+                            ? const SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: CircularProgressIndicator(strokeWidth: 2),
+                              )
+                            : Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    '${_visibleSpotsCount()} spots',
+                                    style: theme.textTheme.labelMedium,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Icon(
+                                    Icons.list,
+                                    size: 14,
+                                    color: theme.colorScheme.onSurfaceVariant,
+                                  ),
+                                ],
+                              ),
+                      ),
                     ),
                   ),
                 ),
