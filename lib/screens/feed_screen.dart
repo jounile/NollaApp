@@ -27,7 +27,6 @@ class _FeedScreenState extends State<FeedScreen> {
   bool _isFetchingMore = false;
   bool _hasMore = false;
   bool _isMockData = false;
-  bool _articlesLoading = true;
   int _page = 1;
   String? _error;
 
@@ -39,11 +38,9 @@ class _FeedScreenState extends State<FeedScreen> {
   }
 
   Future<void> _loadArticles({bool refresh = false}) async {
-    if (refresh) setState(() => _articlesLoading = true);
     final result = await ArticleService.fetchArticles(authToken: widget.authToken);
     if (!mounted) return;
     setState(() {
-      _articlesLoading = false;
       if (result.success) {
         _articles
           ..clear()
@@ -134,6 +131,23 @@ class _FeedScreenState extends State<FeedScreen> {
     }
   }
 
+  List<Object> _buildCombinedList() {
+    final articlesWithImages = _articles
+        .where((a) => a.imageUrl != null && a.imageUrl!.isNotEmpty)
+        .toList();
+    if (articlesWithImages.isEmpty) return List<Object>.from(_items);
+    final combined = <Object>[];
+    int articleIndex = 0;
+    for (int i = 0; i < _items.length; i++) {
+      combined.add(_items[i]);
+      if ((i + 1) % 3 == 0) {
+        combined.add(articlesWithImages[articleIndex % articlesWithImages.length]);
+        articleIndex++;
+      }
+    }
+    return combined;
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -173,41 +187,43 @@ class _FeedScreenState extends State<FeedScreen> {
                             onRefresh: () async {
                               await Future.wait([_loadFeed(refresh: true), _loadArticles(refresh: true)]);
                             },
-                            child: ListView.builder(
-                              itemCount: _items.length + (_hasMore ? 1 : 0) + 1,
-                              itemBuilder: (ctx, i) {
-                                // First item: articles row
-                                if (i == 0) {
-                                  return _ArticlesRow(
-                                    articles: _articles,
-                                    loading: _articlesLoading,
-                                    theme: theme,
-                                  );
-                                }
-                                final mediaIndex = i - 1;
-                                if (mediaIndex == _items.length) {
-                                  _loadMore();
-                                  return const Padding(
-                                    padding: EdgeInsets.all(16),
-                                    child: Center(child: CircularProgressIndicator()),
-                                  );
-                                }
-                                return _MediaCard(
-                                  item: _items[mediaIndex],
-                                  onLike: () => _toggleLike(mediaIndex),
-                                  onComments: () => _openComments(mediaIndex),
-                                  isLiking: _likingIds.contains(_items[mediaIndex].id),
-                                  isExpanded: _expandedIds.contains(_items[mediaIndex].id),
-                                  onExpandToggle: () => setState(() {
-                                    if (_expandedIds.contains(_items[mediaIndex].id)) {
-                                      _expandedIds.remove(_items[mediaIndex].id);
-                                    } else {
-                                      _expandedIds.add(_items[mediaIndex].id);
+                            child: Builder(
+                              builder: (ctx) {
+                                final combined = _buildCombinedList();
+                                return ListView.builder(
+                                  itemCount: combined.length + (_hasMore ? 1 : 0),
+                                  itemBuilder: (ctx, i) {
+                                    if (i == combined.length) {
+                                      _loadMore();
+                                      return const Padding(
+                                        padding: EdgeInsets.all(16),
+                                        child: Center(child: CircularProgressIndicator()),
+                                      );
                                     }
-                                  }),
-                                  theme: theme,
-                                  authToken: widget.authToken,
-                                  currentUsername: widget.username,
+                                    final entry = combined[i];
+                                    if (entry is Article) {
+                                      return _AiImageCard(article: entry, theme: theme);
+                                    }
+                                    final item = entry as MediaItem;
+                                    final mediaIndex = _items.indexOf(item);
+                                    return _MediaCard(
+                                      item: item,
+                                      onLike: () => _toggleLike(mediaIndex),
+                                      onComments: () => _openComments(mediaIndex),
+                                      isLiking: _likingIds.contains(item.id),
+                                      isExpanded: _expandedIds.contains(item.id),
+                                      onExpandToggle: () => setState(() {
+                                        if (_expandedIds.contains(item.id)) {
+                                          _expandedIds.remove(item.id);
+                                        } else {
+                                          _expandedIds.add(item.id);
+                                        }
+                                      }),
+                                      theme: theme,
+                                      authToken: widget.authToken,
+                                      currentUsername: widget.username,
+                                    );
+                                  },
                                 );
                               },
                             ),
@@ -481,128 +497,54 @@ class _MediaCard extends StatelessWidget {
   }
 }
 
-class _ArticlesRow extends StatelessWidget {
-  final List<Article> articles;
-  final bool loading;
-  final ThemeData theme;
-
-  const _ArticlesRow({required this.articles, required this.loading, required this.theme});
-
-  @override
-  Widget build(BuildContext context) {
-    if (!loading && articles.isEmpty) return const SizedBox.shrink();
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-          child: Text(
-            'From nolla.net',
-            style: theme.textTheme.titleSmall?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
-        ),
-        SizedBox(
-          height: 220,
-          child: loading
-              ? ListView.builder(
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                  itemCount: 3,
-                  itemBuilder: (_, __) => _ArticleCardSkeleton(theme: theme),
-                )
-              : ListView.builder(
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                  itemCount: articles.length,
-                  itemBuilder: (ctx, i) => _ArticleCard(article: articles[i], theme: theme),
-                ),
-        ),
-        const SizedBox(height: 8),
-        const Divider(height: 1),
-      ],
-    );
-  }
-}
-
-class _ArticleCard extends StatelessWidget {
+class _AiImageCard extends StatelessWidget {
   final Article article;
   final ThemeData theme;
 
-  const _ArticleCard({required this.article, required this.theme});
+  const _AiImageCard({required this.article, required this.theme});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 180,
-      margin: const EdgeInsets.only(right: 12),
-      child: Card(
-        clipBehavior: Clip.antiAlias,
-        child: InkWell(
-          onTap: article.articleUrl != null
-              ? () => _openArticle(context, article)
-              : null,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              SizedBox(
-                height: 110,
-                child: article.imageUrl != null && article.imageUrl!.isNotEmpty
-                    ? Image.network(
-                        article.imageUrl!,
-                        fit: BoxFit.cover,
-                        width: double.infinity,
-                        loadingBuilder: (ctx, child, progress) => progress == null
-                            ? child
-                            : Container(
-                                color: theme.colorScheme.surfaceContainerHighest,
-                                child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
-                              ),
-                        errorBuilder: (_, __, ___) => Container(
-                          color: theme.colorScheme.surfaceContainerHighest,
-                          child: Center(
-                            child: Icon(Icons.article_outlined, size: 32, color: theme.colorScheme.onSurfaceVariant),
-                          ),
-                        ),
-                      )
+    return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: article.articleUrl != null ? () => _openArticle(context, article) : null,
+        child: Stack(
+          children: [
+            AspectRatio(
+              aspectRatio: 16 / 9,
+              child: Image.network(
+                article.imageUrl!,
+                fit: BoxFit.cover,
+                loadingBuilder: (ctx, child, progress) => progress == null
+                    ? child
                     : Container(
                         color: theme.colorScheme.surfaceContainerHighest,
-                        child: Center(
-                          child: Icon(Icons.article_outlined, size: 32, color: theme.colorScheme.onSurfaceVariant),
-                        ),
+                        child: const Center(child: CircularProgressIndicator()),
                       ),
-              ),
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.all(8),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        article.title,
-                        style: theme.textTheme.labelMedium?.copyWith(fontWeight: FontWeight.bold),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      if (article.author != null) ...[
-                        const SizedBox(height: 4),
-                        Text(
-                          article.author!,
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
-                    ],
-                  ),
+                errorBuilder: (_, __, ___) => Container(
+                  color: theme.colorScheme.surfaceContainerHighest,
+                  child: const Center(child: Icon(Icons.broken_image_outlined, size: 40)),
                 ),
               ),
-            ],
-          ),
+            ),
+            Positioned(
+              bottom: 8,
+              left: 8,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.black54,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Text(
+                  'AI Image',
+                  style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w500),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -678,38 +620,6 @@ class _ArticleCard extends StatelessWidget {
                     ],
                   ],
                 ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _ArticleCardSkeleton extends StatelessWidget {
-  final ThemeData theme;
-  const _ArticleCardSkeleton({required this.theme});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 180,
-      margin: const EdgeInsets.only(right: 12),
-      child: Card(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(height: 110, color: theme.colorScheme.surfaceContainerHighest),
-            Padding(
-              padding: const EdgeInsets.all(8),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(height: 12, width: 140, color: theme.colorScheme.surfaceContainerHighest),
-                  const SizedBox(height: 6),
-                  Container(height: 12, width: 100, color: theme.colorScheme.surfaceContainerHighest),
-                ],
               ),
             ),
           ],
