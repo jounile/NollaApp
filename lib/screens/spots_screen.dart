@@ -182,6 +182,15 @@ class _SpotsScreenState extends State<SpotsScreen> {
     }
   }
 
+  int _visibleSpotsCount() {
+    try {
+      final bounds = _mapController.camera.visibleBounds;
+      return _spots.where((s) => bounds.contains(s.latLng)).length;
+    } catch (_) {
+      return _spots.length;
+    }
+  }
+
   void _showSpotInfo(_Spot spot) {
     showModalBottomSheet<void>(
       context: context,
@@ -430,7 +439,7 @@ class _SpotsScreenState extends State<SpotsScreen> {
                               child: CircularProgressIndicator(strokeWidth: 2),
                             )
                           : Text(
-                              '${_spots.length} spots',
+                              '${_visibleSpotsCount()} spots',
                               style: theme.textTheme.labelMedium,
                             ),
                     ),
