@@ -102493,7 +102493,7 @@ var $async$uT=A.C(function(a,b){if(a===1)return A.D(b,r)
 while(true)switch(s){case 0:p.M(new A.aAN(p))
 A.b8("[SpotDeviations] fetching spots around Helsinki")
 s=3
-return A.H(A.Te(p.a.c,60.1699,24.9384,5e4),$async$uT)
+return A.H(A.Te(p.a.c,60.1699,24.9384,2e5),$async$uT)
 case 3:o=b
 if(p.c==null){s=1
 break}if(o==null){p.M(new A.aAO(p))
