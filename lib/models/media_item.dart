@@ -29,7 +29,7 @@ class MediaItem {
     this.createdAt,
   });
 
-  MediaItem copyWith({bool? isLikedByMe, int? likeCount}) => MediaItem(
+  MediaItem copyWith({bool? isLikedByMe, int? likeCount, int? commentCount}) => MediaItem(
         id: id,
         url: url,
         thumbnailUrl: thumbnailUrl,
@@ -40,7 +40,7 @@ class MediaItem {
         spotName: spotName,
         description: description,
         likeCount: likeCount ?? this.likeCount,
-        commentCount: commentCount,
+        commentCount: commentCount ?? this.commentCount,
         isLikedByMe: isLikedByMe ?? this.isLikedByMe,
         createdAt: createdAt,
       );

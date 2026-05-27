@@ -23,6 +23,7 @@ class _MainScreenState extends State<MainScreen> {
   late final List<Widget> _pages = [
     HomeScreen(
       username: widget.username,
+      authToken: widget.authToken,
       onNavigate: (i) => setState(() => _selectedIndex = i),
     ),
     FeedScreen(username: widget.username, authToken: widget.authToken),

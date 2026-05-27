@@ -3,13 +3,21 @@ import '../models/public_profile.dart';
 import '../models/spot.dart';
 import '../models/media_item.dart';
 import '../services/profile_service.dart';
+import '../services/social_service.dart';
 import '../utils/spot_utils.dart';
+import 'spot_detail_screen.dart';
 
 class UserProfileScreen extends StatefulWidget {
   final String username;
   final String authToken;
+  final String? currentUsername;
 
-  const UserProfileScreen({super.key, required this.username, required this.authToken});
+  const UserProfileScreen({
+    super.key,
+    required this.username,
+    required this.authToken,
+    this.currentUsername,
+  });
 
   @override
   State<UserProfileScreen> createState() => _UserProfileScreenState();
@@ -20,8 +28,11 @@ class _UserProfileScreenState extends State<UserProfileScreen> with SingleTicker
   List<Spot> _spots = [];
   List<MediaItem> _media = [];
   bool _isLoading = true;
+  bool _isFollowing = false;
   String? _error;
   late final TabController _tabController;
+
+  bool get _isOwnProfile => widget.currentUsername == widget.username;
 
   @override
   void initState() {
@@ -54,10 +65,43 @@ class _UserProfileScreenState extends State<UserProfileScreen> with SingleTicker
         _profile = profileResult.profile;
         _spots = results[1] as List<Spot>;
         _media = results[2] as List<MediaItem>;
+        _isFollowing = _profile?.isFollowedByMe ?? false;
       } else {
         _error = profileResult.message ?? 'Failed to load profile';
       }
     });
+  }
+
+  Future<void> _toggleFollow() async {
+    final profile = _profile;
+    if (profile == null || _isOwnProfile) return;
+
+    final wasFollowing = _isFollowing;
+    setState(() {
+      _isFollowing = !wasFollowing;
+      _profile = profile.copyWith(
+        isFollowedByMe: !wasFollowing,
+        followerCount: profile.followerCount + (wasFollowing ? -1 : 1),
+      );
+    });
+
+    final result = wasFollowing
+        ? await SocialService.unfollowUser(widget.username, widget.authToken)
+        : await SocialService.followUser(widget.username, widget.authToken);
+
+    if (!mounted) return;
+    if (!result.success) {
+      setState(() {
+        _isFollowing = wasFollowing;
+        _profile = profile.copyWith(
+          isFollowedByMe: wasFollowing,
+          followerCount: profile.followerCount,
+        );
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(result.message ?? 'Could not update follow status')),
+      );
+    }
   }
 
   @override
@@ -73,7 +117,15 @@ class _UserProfileScreenState extends State<UserProfileScreen> with SingleTicker
                   ? const Center(child: Text('User not found'))
                   : NestedScrollView(
                       headerSliverBuilder: (_, __) => [
-                        SliverToBoxAdapter(child: _ProfileHeader(profile: _profile!, theme: theme)),
+                        SliverToBoxAdapter(
+                          child: _ProfileHeader(
+                            profile: _profile!,
+                            theme: theme,
+                            isOwnProfile: _isOwnProfile,
+                            isFollowing: _isFollowing,
+                            onFollowToggle: _toggleFollow,
+                          ),
+                        ),
                         SliverPersistentHeader(
                           pinned: true,
                           delegate: _TabBarDelegate(
@@ -90,7 +142,11 @@ class _UserProfileScreenState extends State<UserProfileScreen> with SingleTicker
                       body: TabBarView(
                         controller: _tabController,
                         children: [
-                          _SpotsList(spots: _spots, theme: theme),
+                          _SpotsList(
+                            spots: _spots,
+                            theme: theme,
+                            authToken: widget.authToken,
+                          ),
                           _MediaGrid(media: _media, theme: theme),
                         ],
                       ),
@@ -102,8 +158,17 @@ class _UserProfileScreenState extends State<UserProfileScreen> with SingleTicker
 class _ProfileHeader extends StatelessWidget {
   final PublicProfile profile;
   final ThemeData theme;
+  final bool isOwnProfile;
+  final bool isFollowing;
+  final VoidCallback onFollowToggle;
 
-  const _ProfileHeader({required this.profile, required this.theme});
+  const _ProfileHeader({
+    required this.profile,
+    required this.theme,
+    required this.isOwnProfile,
+    required this.isFollowing,
+    required this.onFollowToggle,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -115,16 +180,22 @@ class _ProfileHeader extends StatelessWidget {
           CircleAvatar(
             radius: 36,
             backgroundColor: theme.colorScheme.primaryContainer,
-            backgroundImage:
-                profile.avatarUrl != null && profile.avatarUrl!.isNotEmpty ? NetworkImage(profile.avatarUrl!) : null,
+            backgroundImage: profile.avatarUrl != null && profile.avatarUrl!.isNotEmpty
+                ? NetworkImage(profile.avatarUrl!)
+                : null,
             child: profile.avatarUrl == null || profile.avatarUrl!.isEmpty
                 ? Text(initials, style: TextStyle(fontSize: 28, color: theme.colorScheme.onPrimaryContainer))
                 : null,
           ),
           const SizedBox(height: 12),
-          Text(profile.displayName, style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
-          Text('@${profile.username}',
-              style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+          Text(
+            profile.displayName,
+            style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+          ),
+          Text(
+            '@${profile.username}',
+            style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+          ),
           if (profile.bio != null && profile.bio!.isNotEmpty) ...[
             const SizedBox(height: 8),
             Text(profile.bio!, textAlign: TextAlign.center, style: theme.textTheme.bodyMedium),
@@ -135,8 +206,25 @@ class _ProfileHeader extends StatelessWidget {
             children: [
               _StatChip(label: 'Spots', count: profile.spotCount, theme: theme),
               _StatChip(label: 'Media', count: profile.mediaCount, theme: theme),
+              _StatChip(label: 'Followers', count: profile.followerCount, theme: theme),
+              _StatChip(label: 'Following', count: profile.followingCount, theme: theme),
             ],
           ),
+          if (!isOwnProfile) ...[
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: isFollowing
+                  ? OutlinedButton(
+                      onPressed: onFollowToggle,
+                      child: const Text('Following'),
+                    )
+                  : FilledButton(
+                      onPressed: onFollowToggle,
+                      child: const Text('Follow'),
+                    ),
+            ),
+          ],
         ],
       ),
     );
@@ -154,7 +242,7 @@ class _StatChip extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Text('$count', style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
+        Text('$count', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
         Text(label, style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
       ],
     );
@@ -164,8 +252,9 @@ class _StatChip extends StatelessWidget {
 class _SpotsList extends StatelessWidget {
   final List<Spot> spots;
   final ThemeData theme;
+  final String authToken;
 
-  const _SpotsList({required this.spots, required this.theme});
+  const _SpotsList({required this.spots, required this.theme, required this.authToken});
 
   @override
   Widget build(BuildContext context) {
@@ -180,11 +269,23 @@ class _SpotsList extends StatelessWidget {
           leading: Icon(spotTypeToIcon(s.type), color: theme.colorScheme.primary),
           title: Text(s.name),
           subtitle: Text(s.type),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: () => Navigator.push<void>(
+            context,
+            MaterialPageRoute(
+              builder: (_) => SpotDetailScreen(
+                spotId: s.id,
+                spotName: s.name,
+                authToken: authToken,
+                spotType: s.type,
+                spotDistance: s.distance,
+              ),
+            ),
+          ),
         );
       },
     );
   }
-
 }
 
 class _MediaGrid extends StatelessWidget {

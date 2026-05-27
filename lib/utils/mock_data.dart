@@ -1,5 +1,17 @@
+import '../models/article.dart';
 import '../models/media_item.dart';
+import '../models/profile.dart';
 import '../models/spot.dart';
+
+const Profile mockProfile = Profile(
+  username: 'demo_user',
+  displayName: 'Demo User',
+  bio: 'Skateboarding enthusiast 🛹',
+  email: 'demo@nolla.net',
+  website: 'https://nolla.net',
+  followerCount: 42,
+  followingCount: 17,
+);
 
 const List<MediaItem> mockFeedItems = [
   MediaItem(
@@ -60,6 +72,54 @@ const List<MediaItem> mockFeedItems = [
     likeCount: 19,
     commentCount: 3,
     createdAt: '2024-05-16T12:00:00Z',
+  ),
+];
+
+const List<Article> mockArticles = [
+  Article(
+    id: 1,
+    title: 'Top 5 Skateparks in Helsinki',
+    imageUrl: 'https://nolla.net/media/articles/helsinki-skateparks.jpg',
+    author: 'Nolla Editorial',
+    excerpt: 'Discover the best spots to skate in the Finnish capital, from indoor bowls to street plazas.',
+    publishedAt: '2024-05-15T09:00:00Z',
+    articleUrl: 'https://nolla.net/articles/top-5-skateparks-helsinki',
+  ),
+  Article(
+    id: 2,
+    title: 'Street Skating Culture in Finland',
+    imageUrl: 'https://nolla.net/media/articles/street-skating-finland.jpg',
+    author: 'Nolla Editorial',
+    excerpt: 'How Finnish skaters have built a unique street scene over the past decade.',
+    publishedAt: '2024-05-10T10:00:00Z',
+    articleUrl: 'https://nolla.net/articles/street-skating-culture-finland',
+  ),
+  Article(
+    id: 3,
+    title: 'Beginner Tricks to Master This Summer',
+    imageUrl: 'https://nolla.net/media/articles/beginner-tricks-summer.jpg',
+    author: 'Nolla Editorial',
+    excerpt: 'From ollies to kickflips — a guide to the fundamental tricks every skater should learn.',
+    publishedAt: '2024-05-05T08:00:00Z',
+    articleUrl: 'https://nolla.net/articles/beginner-tricks-summer',
+  ),
+  Article(
+    id: 4,
+    title: 'Interview: Pro Skater Mikko Leinonen',
+    imageUrl: 'https://nolla.net/media/articles/mikko-leinonen-interview.jpg',
+    author: 'Nolla Editorial',
+    excerpt: 'We sat down with Finland\'s top pro skater to talk about his journey and what\'s next.',
+    publishedAt: '2024-04-28T12:00:00Z',
+    articleUrl: 'https://nolla.net/articles/mikko-leinonen-interview',
+  ),
+  Article(
+    id: 5,
+    title: 'New Spots Opening in Tampere',
+    imageUrl: 'https://nolla.net/media/articles/tampere-new-spots.jpg',
+    author: 'Nolla Editorial',
+    excerpt: 'Tampere\'s skateboarding scene is growing fast — here are the newest places to skate.',
+    publishedAt: '2024-04-20T14:00:00Z',
+    articleUrl: 'https://nolla.net/articles/tampere-new-spots',
   ),
 ];
 
