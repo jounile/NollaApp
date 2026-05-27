@@ -127,7 +127,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     return PopScope(
       canPop: !_editing || !_hasUnsavedChanges(),
-      onPopInvokedWithResult: (didPop, _) async {
+      onPopInvoked: (didPop) async {
         if (didPop) return;
         final confirmed = await showDialog<bool>(
           context: context,
