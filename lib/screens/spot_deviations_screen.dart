@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:latlong2/latlong.dart';
 import '../models/spot.dart';
 import '../services/app_logger.dart';
 import '../services/spot_service.dart';
@@ -57,7 +58,10 @@ class _SpotDeviationsScreenState extends State<SpotDeviationsScreen> {
       return;
     }
 
-    final deviations = detectDeviations(spots);
+    final deviations = detectDeviations(
+      spots,
+      reference: const LatLng(_helsinkiLat, _helsinkiLon),
+    );
     AppLogger.log('[SpotDeviations] ${deviations.length} deviation(s) in ${spots.length} spots');
 
     setState(() {
