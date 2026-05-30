@@ -6,20 +6,17 @@ import '../models/profile.dart';
 import '../models/public_profile.dart';
 import '../models/media_item.dart';
 import '../models/spot.dart';
-import '../utils/mock_data.dart';
 import 'app_logger.dart';
 
 class ProfileResult {
   final bool success;
   final String? message;
   final Profile? profile;
-  final bool isMockData;
 
   const ProfileResult({
     required this.success,
     this.message,
     this.profile,
-    this.isMockData = false,
   });
 }
 
@@ -32,7 +29,7 @@ class PublicProfileResult {
 }
 
 class ProfileService {
-  static const String _profileUrl = 'https://nolla.net/api/v1/profile';
+  static const String _profileUrl = 'https://nolla.net/api/v1/user';
 
   static bool _isCors(Object e) =>
       kIsWeb && (e.toString().contains('XMLHttpRequest') || e.toString().contains('Load failed'));
@@ -55,7 +52,6 @@ class ProfileService {
         final body = jsonDecode(response.body);
         final Map<String, dynamic> data;
         if (body is Map<String, dynamic>) {
-          // Unwrap common envelope keys
           data = (body['profile'] ?? body['user'] ?? body['data'] ?? body) as Map<String, dynamic>;
         } else {
           return const ProfileResult(success: false, message: 'Unexpected response format');
@@ -64,20 +60,12 @@ class ProfileService {
       } else if (response.statusCode == 401) {
         return const ProfileResult(success: false, message: 'Session expired — please log in again');
       } else {
-        if (kIsWeb) {
-          AppLogger.log('[ProfileService] web API error (${response.statusCode}) — returning mock profile');
-          return const ProfileResult(success: true, profile: mockProfile, isMockData: true);
-        }
-        if (response.statusCode == 404) {
-          return const ProfileResult(success: false, message: 'Profile endpoint not found — API may not support this yet');
-        }
         return ProfileResult(success: false, message: 'Failed to load profile (${response.statusCode})');
       }
     } catch (e) {
       AppLogger.log('[ProfileService] exception: $e');
       if (_isCors(e)) {
-        AppLogger.log('[ProfileService] CORS — returning mock profile');
-        return const ProfileResult(success: true, profile: mockProfile, isMockData: true);
+        return const ProfileResult(success: false, message: 'Cannot load profile on web — server CORS policy blocks this request');
       }
       return const ProfileResult(success: false, message: 'Network error. Please check your connection.');
     }

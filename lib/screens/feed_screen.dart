@@ -23,7 +23,6 @@ class _FeedScreenState extends State<FeedScreen> {
   bool _isLoading = true;
   bool _isFetchingMore = false;
   bool _hasMore = false;
-  bool _isMockData = false;
   int _page = 1;
   String? _error;
 
@@ -50,7 +49,6 @@ class _FeedScreenState extends State<FeedScreen> {
         if (refresh) _items.clear();
         _items.addAll(result.items);
         _hasMore = result.hasMore;
-        _isMockData = result.isMockData;
       } else {
         _error = result.message;
       }
@@ -136,13 +134,6 @@ class _FeedScreenState extends State<FeedScreen> {
       ),
       body: Column(
         children: [
-          if (_isMockData)
-            MaterialBanner(
-              content: const Text('Demo mode — showing sample data (web preview)'),
-              leading: const Icon(Icons.info_outline),
-              actions: [TextButton(onPressed: () => setState(() => _isMockData = false), child: const Text('Dismiss'))],
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-            ),
           Expanded(
             child: _isLoading
                 ? const Center(child: CircularProgressIndicator())
