@@ -32,7 +32,7 @@ class MediaItem {
   String get viewUrl {
     if (id == 0) return thumbnailUrl ?? url;
     if (mediaType == 'video') return 'https://nolla.net/mp4/${id}_400.mp4';
-    return 'https://nolla.net/media/photos-thumbs/${id}_400.jpg';
+    return 'https://nolla.net/media/photos/${id}_400.jpg';
   }
 
   MediaItem copyWith({bool? isLikedByMe, int? likeCount, int? commentCount}) => MediaItem(
