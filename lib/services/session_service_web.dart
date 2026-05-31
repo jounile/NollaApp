@@ -1,6 +1,5 @@
 // ignore: avoid_web_libraries_in_flutter
 import 'dart:html' as html;
-import 'user_cache.dart';
 
 class SessionService {
   static const _keyToken = 'nolla_auth_token';
@@ -23,6 +22,5 @@ class SessionService {
   static Future<void> clear() async {
     html.window.localStorage.remove(_keyToken);
     html.window.localStorage.remove(_keyUsername);
-    UserCache.loginUserData = null;
   }
 }
