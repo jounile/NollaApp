@@ -499,6 +499,7 @@ class _VideoPlayerView extends StatefulWidget {
 class _VideoPlayerViewState extends State<_VideoPlayerView> {
   late VideoPlayerController _controller;
   bool _initialized = false;
+  String? _error;
 
   @override
   void initState() {
@@ -511,6 +512,9 @@ class _VideoPlayerViewState extends State<_VideoPlayerView> {
         if (!mounted) return;
         setState(() => _initialized = true);
         _controller.play();
+      }).catchError((Object e) {
+        if (!mounted) return;
+        setState(() => _error = 'Could not load video');
       });
     _controller.addListener(() {
       if (mounted) setState(() {});
@@ -540,6 +544,17 @@ class _VideoPlayerViewState extends State<_VideoPlayerView> {
                     aspectRatio: _controller.value.aspectRatio,
                     child: VideoPlayer(_controller),
                   ),
+                ),
+              )
+            else if (_error != null)
+              Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.videocam_off, color: Colors.white54, size: 48),
+                    const SizedBox(height: 12),
+                    Text(_error!, style: const TextStyle(color: Colors.white70)),
+                  ],
                 ),
               )
             else
