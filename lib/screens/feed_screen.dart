@@ -188,7 +188,9 @@ class _FeedScreenState extends State<FeedScreen> {
                   Padding(
                     padding: const EdgeInsets.only(right: 12),
                     child: Text(
-                      '${_filteredItems.length}',
+                      _selectedMediatypeId == null
+                          ? '${_items.length}'
+                          : '${_filteredItems.length} / ${_items.length}',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                             color: Theme.of(context).colorScheme.onSurfaceVariant,
                           ),
@@ -209,7 +211,7 @@ class _FeedScreenState extends State<FeedScreen> {
                             child: Builder(builder: (context) {
                               final filtered = _filteredItems;
                               return ListView.builder(
-                                itemCount: filtered.length + (_hasMore && _selectedMediatypeId == null ? 1 : 0),
+                                itemCount: filtered.length + (_hasMore ? 1 : 0),
                                 itemBuilder: (ctx, i) {
                                   if (i == filtered.length) {
                                     _loadMore();
