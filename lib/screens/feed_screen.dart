@@ -71,7 +71,7 @@ class _FeedScreenState extends State<FeedScreen> {
     switch (id) {
       case 1: return 'Photos';
       case 5: return 'Video (5)';
-      case 6: return 'Video (6)';
+      case 6: return 'Video';
       default: return 'Type $id';
     }
   }
