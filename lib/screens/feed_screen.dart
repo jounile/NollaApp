@@ -172,7 +172,7 @@ class _FeedScreenState extends State<FeedScreen> {
       ),
       body: Column(
         children: [
-          if (!_isLoading && (_availableMediatypeIds.isNotEmpty || _hasOtherItems))
+          if (!_isLoading && _items.isNotEmpty)
             SizedBox(
               height: 48,
               child: Row(
@@ -198,15 +198,14 @@ class _FeedScreenState extends State<FeedScreen> {
                                 onSelected: (_) => setState(() => _selectedMediatypeId = id),
                               ),
                             )),
-                        if (_hasOtherItems)
-                          Padding(
-                            padding: const EdgeInsets.only(right: 8),
-                            child: FilterChip(
-                              label: const Text('Other'),
-                              selected: _selectedMediatypeId == _otherFilterId,
-                              onSelected: (_) => setState(() => _selectedMediatypeId = _otherFilterId),
-                            ),
+                        Padding(
+                          padding: const EdgeInsets.only(right: 8),
+                          child: FilterChip(
+                            label: const Text('Other'),
+                            selected: _selectedMediatypeId == _otherFilterId,
+                            onSelected: (_) => setState(() => _selectedMediatypeId = _otherFilterId),
                           ),
+                        ),
                       ],
                     ),
                   ),
