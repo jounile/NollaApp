@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 import '../models/profile.dart';
@@ -30,6 +31,9 @@ class PublicProfileResult {
 
 class ProfileService {
   static const String _profileUrl = 'https://nolla.net/api/v1/user';
+
+  static bool _isCors(Object e) =>
+      kIsWeb && (e.toString().contains('XMLHttpRequest') || e.toString().contains('Load failed'));
 
   static Map<String, String> _headers(String authToken) => {
     'Accept': 'application/json',
@@ -151,6 +155,7 @@ class ProfileService {
       final uri = Uri.parse('https://nolla.net/api/v1/users/$username');
       AppLogger.log('[ProfileService] GET $uri');
       final response = await appHttpClient.get(uri, headers: _headers(authToken)).timeout(const Duration(seconds: 10));
+      AppLogger.log('[ProfileService] fetchPublicProfile status=${response.statusCode}');
       if (response.statusCode == 200) {
         final body = jsonDecode(response.body);
         final Map<String, dynamic> data;
@@ -161,17 +166,25 @@ class ProfileService {
         }
         return PublicProfileResult(success: true, profile: PublicProfile.fromJson(data));
       }
+      if (response.statusCode == 401) {
+        return const PublicProfileResult(success: false, message: 'Session expired — please log in again');
+      }
       return PublicProfileResult(success: false, message: 'Failed to load profile (${response.statusCode})');
     } catch (e) {
       AppLogger.log('[ProfileService] fetchPublicProfile exception: $e');
-      return const PublicProfileResult(success: false, message: 'Network error');
+      if (_isCors(e)) {
+        return const PublicProfileResult(success: false, message: 'CORS error — API must allow web requests');
+      }
+      return const PublicProfileResult(success: false, message: 'Network error. Please check your connection.');
     }
   }
 
   static Future<List<Spot>> fetchUserSpots(String username, String authToken) async {
     try {
       final uri = Uri.parse('https://nolla.net/api/v1/users/$username/spots');
+      AppLogger.log('[ProfileService] GET $uri');
       final response = await appHttpClient.get(uri, headers: _headers(authToken)).timeout(const Duration(seconds: 10));
+      AppLogger.log('[ProfileService] fetchUserSpots status=${response.statusCode}');
       if (response.statusCode == 200) {
         final body = jsonDecode(response.body);
         final List<dynamic> list;
@@ -191,6 +204,7 @@ class ProfileService {
         }
         return spots;
       }
+      AppLogger.log('[ProfileService] fetchUserSpots failed (${response.statusCode})');
       return [];
     } catch (e) {
       AppLogger.log('[ProfileService] fetchUserSpots exception: $e');
@@ -201,7 +215,9 @@ class ProfileService {
   static Future<List<MediaItem>> fetchUserMedia(String username, String authToken) async {
     try {
       final uri = Uri.parse('https://nolla.net/api/v1/users/$username/media');
+      AppLogger.log('[ProfileService] GET $uri');
       final response = await appHttpClient.get(uri, headers: _headers(authToken)).timeout(const Duration(seconds: 10));
+      AppLogger.log('[ProfileService] fetchUserMedia status=${response.statusCode}');
       if (response.statusCode == 200) {
         final body = jsonDecode(response.body);
         final List<dynamic> list;
@@ -221,6 +237,7 @@ class ProfileService {
         }
         return items;
       }
+      AppLogger.log('[ProfileService] fetchUserMedia failed (${response.statusCode})');
       return [];
     } catch (e) {
       AppLogger.log('[ProfileService] fetchUserMedia exception: $e');
