@@ -73,8 +73,9 @@ class MediaItem {
       spotName = json['spot_name'] as String?;
     }
 
-    // API uses mediatype_id: 1=image/photo, 2=video
-    final mediaType = json['media_type'] as String? ?? json['type'] as String? ?? _mediaTypeFromId(json['mediatype_id']);
+    // API uses mediatype_id: 1=image/photo, 2=video; type may be 'mp4', 'video/mp4', etc.
+    final rawType = json['media_type'] as String? ?? json['type'] as String?;
+    final mediaType = rawType != null ? _normalizeMediaType(rawType) : _mediaTypeFromId(json['mediatype_id']);
     final thumbDir = mediaType == 'video' ? 'mp4-thumbs' : 'photos-thumbs';
 
     return MediaItem(
@@ -94,6 +95,12 @@ class MediaItem {
       isLikedByMe: json['is_liked_by_me'] as bool? ?? json['liked'] as bool? ?? false,
       createdAt: json['created_at'] as String? ?? json['createdAt'] as String?,
     );
+  }
+
+  static String _normalizeMediaType(String raw) {
+    final lower = raw.toLowerCase();
+    if (lower == 'video' || lower == 'mp4' || lower.startsWith('video/')) return 'video';
+    return 'photo';
   }
 
   static String _mediaTypeFromId(dynamic id) {
