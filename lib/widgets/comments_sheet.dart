@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
 import '../models/comment.dart';
+import '../screens/user_profile_screen.dart';
 import '../services/comment_service.dart';
 
 Future<int?> showCommentsSheet(
   BuildContext context,
   int mediaId,
   int currentCount,
-  String authToken,
-) {
+  String authToken, {
+  String? currentUsername,
+}) {
   return showModalBottomSheet<int>(
     context: context,
     isScrollControlled: true,
@@ -19,6 +21,7 @@ Future<int?> showCommentsSheet(
       mediaId: mediaId,
       currentCount: currentCount,
       authToken: authToken,
+      currentUsername: currentUsername,
     ),
   );
 }
@@ -27,11 +30,13 @@ class _CommentsSheet extends StatefulWidget {
   final int mediaId;
   final int currentCount;
   final String authToken;
+  final String? currentUsername;
 
   const _CommentsSheet({
     required this.mediaId,
     required this.currentCount,
     required this.authToken,
+    this.currentUsername,
   });
 
   @override
@@ -177,9 +182,11 @@ class _CommentsSheetState extends State<_CommentsSheet> {
                               controller: _scrollCtrl,
                               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                               itemCount: _comments.length,
-                              itemBuilder: (_, i) => _CommentTile(
+                              itemBuilder: (ctx, i) => _CommentTile(
                                 comment: _comments[i],
                                 theme: theme,
+                                authToken: widget.authToken,
+                                currentUsername: widget.currentUsername,
                               ),
                             ),
             ),
@@ -233,25 +240,47 @@ class _CommentsSheetState extends State<_CommentsSheet> {
 class _CommentTile extends StatelessWidget {
   final Comment comment;
   final ThemeData theme;
+  final String authToken;
+  final String? currentUsername;
 
-  const _CommentTile({required this.comment, required this.theme});
+  const _CommentTile({
+    required this.comment,
+    required this.theme,
+    required this.authToken,
+    this.currentUsername,
+  });
+
+  void _openProfile(BuildContext context) {
+    if (comment.authorUsername.isEmpty) return;
+    Navigator.of(context).push<void>(MaterialPageRoute(
+      builder: (_) => UserProfileScreen(
+        username: comment.authorUsername,
+        authToken: authToken,
+        currentUsername: currentUsername,
+      ),
+    ));
+  }
 
   @override
   Widget build(BuildContext context) {
     final initials = comment.authorDisplayName.isNotEmpty
         ? comment.authorDisplayName[0].toUpperCase()
         : '?';
+    final canNavigate = comment.authorUsername.isNotEmpty;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          CircleAvatar(
-            radius: 14,
-            backgroundColor: theme.colorScheme.primaryContainer,
-            child: Text(
-              initials,
-              style: TextStyle(fontSize: 12, color: theme.colorScheme.onPrimaryContainer),
+          GestureDetector(
+            onTap: canNavigate ? () => _openProfile(context) : null,
+            child: CircleAvatar(
+              radius: 14,
+              backgroundColor: theme.colorScheme.primaryContainer,
+              child: Text(
+                initials,
+                style: TextStyle(fontSize: 12, color: theme.colorScheme.onPrimaryContainer),
+              ),
             ),
           ),
           const SizedBox(width: 10),
@@ -261,11 +290,17 @@ class _CommentTile extends StatelessWidget {
               children: [
                 Row(
                   children: [
-                    Text(
-                      comment.authorDisplayName.isNotEmpty
-                          ? comment.authorDisplayName
-                          : comment.authorUsername,
-                      style: theme.textTheme.labelMedium?.copyWith(fontWeight: FontWeight.bold),
+                    GestureDetector(
+                      onTap: canNavigate ? () => _openProfile(context) : null,
+                      child: Text(
+                        comment.authorDisplayName.isNotEmpty
+                            ? comment.authorDisplayName
+                            : comment.authorUsername,
+                        style: theme.textTheme.labelMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: canNavigate ? theme.colorScheme.primary : null,
+                        ),
+                      ),
                     ),
                     if (comment.createdAt != null) ...[
                       const SizedBox(width: 6),

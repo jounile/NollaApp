@@ -107,6 +107,7 @@ class _FeedScreenState extends State<FeedScreen> {
       item.id,
       item.commentCount,
       widget.authToken,
+      currentUsername: widget.username,
     );
     if (!mounted) return;
     if (newCount != null && newCount != item.commentCount) {

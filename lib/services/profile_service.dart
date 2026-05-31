@@ -148,7 +148,7 @@ class ProfileService {
 
   static Future<PublicProfileResult> fetchPublicProfile(String username, String authToken) async {
     try {
-      final uri = Uri.parse('https://nolla.net/api/v1/users/$username');
+      final uri = Uri.parse('https://nolla.net/api/v1/user/$username');
       AppLogger.log('[ProfileService] GET $uri');
       final response = await appHttpClient.get(uri, headers: _headers(authToken)).timeout(const Duration(seconds: 10));
       if (response.statusCode == 200) {
