@@ -20,7 +20,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
   bool _editing = false;
   bool _saving = false;
   bool _uploadingAvatar = false;
-  bool _isMockData = false;
   String? _errorMessage;
 
   Profile? _profile;
@@ -53,24 +52,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final result = await ProfileService.fetchProfile(widget.authToken);
     if (!mounted) return;
     if (result.success && result.profile != null) {
-      // Replace the mock username with the real logged-in username so the
-      // screen looks correct even when showing demo data.
-      final profile = result.isMockData
-          ? Profile(
-              username: widget.username,
-              displayName: result.profile!.displayName,
-              bio: result.profile!.bio,
-              email: result.profile!.email,
-              website: result.profile!.website,
-              avatarUrl: result.profile!.avatarUrl,
-              followerCount: result.profile!.followerCount,
-              followingCount: result.profile!.followingCount,
-            )
-          : result.profile!;
-      _applyProfile(profile);
+      _applyProfile(result.profile!);
       setState(() {
         _loading = false;
-        _isMockData = result.isMockData;
       });
     } else {
       setState(() {
@@ -203,7 +187,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           IconButton(
             icon: const Icon(Icons.terminal),
             tooltip: 'View logs',
-            onPressed: () => showLogViewer(context, filter: const ['[ProfileService]']),
+            onPressed: () => showLogViewer(context, filter: const ['[ProfileService]', '[AuthService]']),
           ),
           if (_loading || _saving)
             const Padding(
@@ -230,18 +214,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ? _ErrorView(message: _errorMessage!, onRetry: _fetchProfile)
                 : Column(
                     children: [
-                      if (_isMockData)
-                        MaterialBanner(
-                          content: const Text('Demo mode — showing sample profile (web preview)'),
-                          leading: const Icon(Icons.info_outline),
-                          actions: [
-                            TextButton(
-                              onPressed: () => setState(() => _isMockData = false),
-                              child: const Text('Dismiss'),
-                            ),
-                          ],
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                        ),
                       Expanded(
                         child: SingleChildScrollView(
                     padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
