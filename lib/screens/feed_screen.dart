@@ -289,7 +289,7 @@ class _MediaCard extends StatelessWidget {
         children: [
           if (displayUrl.isNotEmpty)
             GestureDetector(
-              onTap: () => _openMediaView(context, item.viewUrl),
+              onTap: () => _openMediaView(context, item),
               child: AspectRatio(
                 aspectRatio: 16 / 9,
                 child: Image.network(
@@ -445,7 +445,9 @@ class _MediaCard extends StatelessWidget {
   }
 }
 
-void _openMediaView(BuildContext context, String url) {
+void _openMediaView(BuildContext context, MediaItem item) {
+  final isVideo = item.mediaType == 'video';
+  final imageUrl = isVideo ? (item.thumbnailUrl ?? item.url) : item.viewUrl;
   showDialog<void>(
     context: context,
     builder: (_) => Dialog.fullscreen(
@@ -455,7 +457,7 @@ void _openMediaView(BuildContext context, String url) {
           Center(
             child: InteractiveViewer(
               child: Image.network(
-                url,
+                imageUrl,
                 fit: BoxFit.contain,
                 loadingBuilder: (ctx, child, progress) => progress == null
                     ? child
@@ -465,6 +467,12 @@ void _openMediaView(BuildContext context, String url) {
               ),
             ),
           ),
+          if (isVideo)
+            const Center(
+              child: IgnorePointer(
+                child: Icon(Icons.play_circle_outline, size: 72, color: Colors.white70),
+              ),
+            ),
           Positioned(
             top: 16,
             right: 16,
