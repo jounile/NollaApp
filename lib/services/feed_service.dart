@@ -9,12 +9,14 @@ class FeedResult {
   final String? message;
   final List<MediaItem> items;
   final bool hasMore;
+  final int? total;
 
   const FeedResult({
     required this.success,
     this.message,
     this.items = const [],
     this.hasMore = false,
+    this.total,
   });
 }
 
@@ -39,13 +41,14 @@ class FeedService {
         final body = jsonDecode(response.body);
         final List<dynamic> list;
         bool hasMore = false;
+        int? total;
         if (body is List) {
           list = body;
         } else if (body is Map<String, dynamic>) {
           final raw = body['media'] ?? body['items'] ?? body['data'] ?? body['results'];
           list = raw is List ? raw : [];
           final meta = body['meta'] as Map<String, dynamic>?;
-          final total = (meta?['total'] as num?)?.toInt() ?? (body['total'] as num?)?.toInt();
+          total = (meta?['total'] as num?)?.toInt() ?? (body['total'] as num?)?.toInt();
           final pages = (meta?['pages'] as num?)?.toInt();
           if (pages != null) {
             hasMore = page < pages;
@@ -59,6 +62,7 @@ class FeedService {
         final items = <MediaItem>[];
         for (final e in list) {
           try {
+            if ((e['mediatype_id'] as num?)?.toInt() == 5) continue;
             final item = MediaItem.fromJson(e as Map<String, dynamic>);
             AppLogger.log('[FeedService] item id=${item.id} type=${item.mediaType} rawType=${e['media_type'] ?? e['type'] ?? e['mediatype_id']} url=${item.url} viewUrl=${item.viewUrl} thumb=${item.thumbnailUrl}');
             items.add(item);
@@ -66,7 +70,8 @@ class FeedService {
             AppLogger.log('[FeedService] skipped item: $err');
           }
         }
-        return FeedResult(success: true, items: items, hasMore: hasMore);
+        AppLogger.log('[FeedService] total=$total hasMore=$hasMore items=${items.length}');
+        return FeedResult(success: true, items: items, hasMore: hasMore, total: total);
       }
       if (response.statusCode == 401) {
         return const FeedResult(success: false, message: 'Session expired — please log in again');

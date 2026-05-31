@@ -27,6 +27,8 @@ class _FeedScreenState extends State<FeedScreen> {
   bool _hasMore = false;
   int _page = 1;
   String? _error;
+  int? _selectedMediatypeId;
+  int? _serverTotal;
 
   @override
   void initState() {
@@ -40,6 +42,7 @@ class _FeedScreenState extends State<FeedScreen> {
         _isLoading = true;
         _page = 1;
         _error = null;
+        _serverTotal = null;
       });
     }
     final result = await FeedService.fetchFeed(widget.authToken, page: _page);
@@ -51,10 +54,33 @@ class _FeedScreenState extends State<FeedScreen> {
         if (refresh) _items.clear();
         _items.addAll(result.items);
         _hasMore = result.hasMore;
+        if (result.total != null) _serverTotal = result.total;
       } else {
         _error = result.message;
       }
     });
+  }
+
+  List<MediaItem> get _filteredItems => _selectedMediatypeId == null
+      ? _items
+      : _items.where((e) => e.mediatypeId == _selectedMediatypeId).toList();
+
+  List<int> get _availableMediatypeIds {
+    final ids = _items.map((e) => e.mediatypeId).whereType<int>().toSet().toList()..sort();
+    return ids;
+  }
+
+  int get _displayCount => _selectedMediatypeId == null
+      ? _serverTotal ?? _items.where((e) => _availableMediatypeIds.contains(e.mediatypeId)).length
+      : _filteredItems.length;
+
+  String _mediatypeLabel(int id) {
+    switch (id) {
+      case 1: return 'Photos';
+      case 5: return 'Video (5)';
+      case 6: return 'Video';
+      default: return 'Type $id';
+    }
   }
 
   Future<void> _loadMore() async {
@@ -137,6 +163,48 @@ class _FeedScreenState extends State<FeedScreen> {
       ),
       body: Column(
         children: [
+          if (!_isLoading && _availableMediatypeIds.isNotEmpty)
+            SizedBox(
+              height: 48,
+              child: Row(
+                children: [
+                  Expanded(
+                    child: ListView(
+                      scrollDirection: Axis.horizontal,
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.only(right: 8),
+                          child: FilterChip(
+                            label: const Text('All'),
+                            selected: _selectedMediatypeId == null,
+                            onSelected: (_) => setState(() => _selectedMediatypeId = null),
+                          ),
+                        ),
+                        ..._availableMediatypeIds.map((id) => Padding(
+                              padding: const EdgeInsets.only(right: 8),
+                              child: FilterChip(
+                                label: Text(_mediatypeLabel(id)),
+                                selected: _selectedMediatypeId == id,
+                                onSelected: (_) => setState(() => _selectedMediatypeId = id),
+                              ),
+                            )),
+                      ],
+                    ),
+                  ),
+                  if (_selectedMediatypeId == null)
+                    Padding(
+                      padding: const EdgeInsets.only(right: 12),
+                      child: Text(
+                        '$_displayCount',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: Theme.of(context).colorScheme.onSurfaceVariant,
+                            ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
           Expanded(
             child: _isLoading
                 ? const Center(child: CircularProgressIndicator())
@@ -146,35 +214,40 @@ class _FeedScreenState extends State<FeedScreen> {
                         ? _EmptyView(username: widget.username, theme: theme)
                         : RefreshIndicator(
                             onRefresh: () => _loadFeed(refresh: true),
-                            child: ListView.builder(
-                              itemCount: _items.length + (_hasMore ? 1 : 0),
-                              itemBuilder: (ctx, i) {
-                                if (i == _items.length) {
-                                  _loadMore();
-                                  return const Padding(
-                                    padding: EdgeInsets.all(16),
-                                    child: Center(child: CircularProgressIndicator()),
+                            child: Builder(builder: (context) {
+                              final filtered = _filteredItems;
+                              return ListView.builder(
+                                itemCount: filtered.length + (_hasMore ? 1 : 0),
+                                itemBuilder: (ctx, i) {
+                                  if (i == filtered.length) {
+                                    _loadMore();
+                                    return const Padding(
+                                      padding: EdgeInsets.all(16),
+                                      child: Center(child: CircularProgressIndicator()),
+                                    );
+                                  }
+                                  final item = filtered[i];
+                                  final srcIndex = _items.indexOf(item);
+                                  return _MediaCard(
+                                    item: item,
+                                    onLike: () => _toggleLike(srcIndex),
+                                    onComments: () => _openComments(srcIndex),
+                                    isLiking: _likingIds.contains(item.id),
+                                    isExpanded: _expandedIds.contains(item.id),
+                                    onExpandToggle: () => setState(() {
+                                      if (_expandedIds.contains(item.id)) {
+                                        _expandedIds.remove(item.id);
+                                      } else {
+                                        _expandedIds.add(item.id);
+                                      }
+                                    }),
+                                    theme: theme,
+                                    authToken: widget.authToken,
+                                    currentUsername: widget.username,
                                   );
-                                }
-                                return _MediaCard(
-                                  item: _items[i],
-                                  onLike: () => _toggleLike(i),
-                                  onComments: () => _openComments(i),
-                                  isLiking: _likingIds.contains(_items[i].id),
-                                  isExpanded: _expandedIds.contains(_items[i].id),
-                                  onExpandToggle: () => setState(() {
-                                    if (_expandedIds.contains(_items[i].id)) {
-                                      _expandedIds.remove(_items[i].id);
-                                    } else {
-                                      _expandedIds.add(_items[i].id);
-                                    }
-                                  }),
-                                  theme: theme,
-                                  authToken: widget.authToken,
-                                  currentUsername: widget.username,
-                                );
-                              },
-                            ),
+                                },
+                              );
+                            }),
                           ),
           ),
         ],
