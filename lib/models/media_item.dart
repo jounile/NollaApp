@@ -29,6 +29,12 @@ class MediaItem {
     this.createdAt,
   });
 
+  String get viewUrl {
+    if (id == 0) return thumbnailUrl ?? url;
+    if (mediaType == 'video') return 'https://nolla.net/mp4/${id}_400.mp4';
+    return 'https://nolla.net/media/photos/${id}_400.jpg';
+  }
+
   MediaItem copyWith({bool? isLikedByMe, int? likeCount, int? commentCount}) => MediaItem(
         id: id,
         url: url,
@@ -46,6 +52,7 @@ class MediaItem {
       );
 
   factory MediaItem.fromJson(Map<String, dynamic> json) {
+    final id = (json['id'] as num?)?.toInt() ?? 0;
     final uploader = json['uploader'] ?? json['user'] ?? json['author'];
     String uploaderUsername = '';
     String uploaderDisplayName = '';
@@ -72,12 +79,24 @@ class MediaItem {
       spotName = json['spot_name'] as String?;
     }
 
+    final url = json['url'] as String? ?? json['file_url'] as String? ?? '';
+
+    // mediatype_id is authoritative (1=photo, 5/6=video); fall back to string type, then URL extension.
+    final rawType = json['media_type'] as String? ?? json['type'] as String?;
+    final mediaType = json['mediatype_id'] != null
+        ? _mediaTypeFromId(json['mediatype_id'])
+        : rawType != null
+            ? _normalizeMediaType(rawType)
+            : _inferTypeFromUrl(url);
+    final thumbDir = mediaType == 'video' ? 'mp4-thumbs' : 'photos-thumbs';
+
     return MediaItem(
-      id: (json['id'] as num?)?.toInt() ?? 0,
-      url: json['url'] as String? ?? json['file_url'] as String? ?? '',
-      thumbnailUrl: json['thumbnail_url'] as String? ?? json['thumbnail'] as String?,
-      // API uses mediatype_id: 1=image/photo, 2=video
-      mediaType: json['media_type'] as String? ?? json['type'] as String? ?? _mediaTypeFromId(json['mediatype_id']),
+      id: id,
+      url: url,
+      thumbnailUrl: json['thumbnail_url'] as String? ??
+          json['thumbnail'] as String? ??
+          (id != 0 ? 'https://nolla.net/media/$thumbDir/${id}_100.jpg' : null),
+      mediaType: mediaType,
       uploaderUsername: uploaderUsername,
       uploaderDisplayName: uploaderDisplayName,
       spotId: spotId,
@@ -90,9 +109,21 @@ class MediaItem {
     );
   }
 
+  static String _normalizeMediaType(String raw) {
+    final lower = raw.toLowerCase();
+    if (lower == 'video' || lower == 'mp4' || lower.startsWith('video/')) return 'video';
+    return 'photo';
+  }
+
+  static String _inferTypeFromUrl(String url) {
+    final lower = url.toLowerCase().split('?').first;
+    if (lower.endsWith('.mp4') || lower.endsWith('.mov') || lower.endsWith('.webm') || lower.endsWith('.m4v')) return 'video';
+    return 'photo';
+  }
+
   static String _mediaTypeFromId(dynamic id) {
     if (id == null) return 'photo';
     final n = id is num ? id.toInt() : int.tryParse(id.toString());
-    return n == 2 ? 'video' : 'photo';
+    return (n == 5 || n == 6) ? 'video' : 'photo';
   }
 }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:video_player/video_player.dart';
 import '../models/media_item.dart';
 import '../services/app_logger.dart';
 import '../services/feed_service.dart';
@@ -288,20 +289,23 @@ class _MediaCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (displayUrl.isNotEmpty)
-            AspectRatio(
-              aspectRatio: 16 / 9,
-              child: Image.network(
-                displayUrl,
-                fit: BoxFit.cover,
-                loadingBuilder: (ctx, child, progress) => progress == null
-                    ? child
-                    : Container(
-                        color: theme.colorScheme.surfaceContainerHighest,
-                        child: const Center(child: CircularProgressIndicator()),
-                      ),
-                errorBuilder: (_, __, ___) => Container(
-                  color: theme.colorScheme.surfaceContainerHighest,
-                  child: const Center(child: Icon(Icons.broken_image_outlined, size: 40)),
+            GestureDetector(
+              onTap: () => _openMediaView(context, item, authToken),
+              child: AspectRatio(
+                aspectRatio: 16 / 9,
+                child: Image.network(
+                  displayUrl,
+                  fit: BoxFit.cover,
+                  loadingBuilder: (ctx, child, progress) => progress == null
+                      ? child
+                      : Container(
+                          color: theme.colorScheme.surfaceContainerHighest,
+                          child: const Center(child: CircularProgressIndicator()),
+                        ),
+                  errorBuilder: (_, __, ___) => Container(
+                    color: theme.colorScheme.surfaceContainerHighest,
+                    child: const Center(child: Icon(Icons.broken_image_outlined, size: 40)),
+                  ),
                 ),
               ),
             ),
@@ -437,6 +441,140 @@ class _MediaCard extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+void _openMediaView(BuildContext context, MediaItem item, String authToken) {
+  if (item.mediaType == 'video') {
+    Navigator.of(context).push<void>(MaterialPageRoute(
+      fullscreenDialog: true,
+      builder: (_) => _VideoPlayerView(url: item.viewUrl, authToken: authToken),
+    ));
+  } else {
+    showDialog<void>(
+      context: context,
+      builder: (_) => Dialog.fullscreen(
+        backgroundColor: Colors.black,
+        child: Stack(
+          children: [
+            Center(
+              child: InteractiveViewer(
+                child: Image.network(
+                  item.viewUrl,
+                  fit: BoxFit.contain,
+                  loadingBuilder: (ctx, child, progress) => progress == null
+                      ? child
+                      : const Center(child: CircularProgressIndicator(color: Colors.white)),
+                  errorBuilder: (_, __, ___) =>
+                      const Center(child: Icon(Icons.broken_image_outlined, size: 48, color: Colors.white54)),
+                ),
+              ),
+            ),
+            Positioned(
+              top: 16,
+              right: 16,
+              child: IconButton(
+                icon: const Icon(Icons.close, color: Colors.white),
+                onPressed: () => Navigator.of(context).pop(),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _VideoPlayerView extends StatefulWidget {
+  final String url;
+  final String authToken;
+  const _VideoPlayerView({required this.url, required this.authToken});
+
+  @override
+  State<_VideoPlayerView> createState() => _VideoPlayerViewState();
+}
+
+class _VideoPlayerViewState extends State<_VideoPlayerView> {
+  late VideoPlayerController _controller;
+  bool _initialized = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = VideoPlayerController.networkUrl(
+      Uri.parse(widget.url),
+      httpHeaders: {'Authorization': 'Bearer ${widget.authToken}'},
+    )
+      ..initialize().then((_) {
+        if (!mounted) return;
+        setState(() => _initialized = true);
+        _controller.play();
+      });
+    _controller.addListener(() {
+      if (mounted) setState(() {});
+    });
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      body: SafeArea(
+        child: Stack(
+          children: [
+            if (_initialized)
+              Center(
+                child: GestureDetector(
+                  onTap: () {
+                    _controller.value.isPlaying ? _controller.pause() : _controller.play();
+                  },
+                  child: AspectRatio(
+                    aspectRatio: _controller.value.aspectRatio,
+                    child: VideoPlayer(_controller),
+                  ),
+                ),
+              )
+            else
+              const Center(child: CircularProgressIndicator(color: Colors.white)),
+            if (_initialized && !_controller.value.isPlaying)
+              Center(
+                child: IgnorePointer(
+                  child: Icon(Icons.play_circle_outline, size: 72, color: Colors.white.withOpacity(0.7)),
+                ),
+              ),
+            if (_initialized)
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: 0,
+                child: VideoProgressIndicator(
+                  _controller,
+                  allowScrubbing: true,
+                  colors: const VideoProgressColors(
+                    playedColor: Colors.white,
+                    bufferedColor: Colors.white38,
+                    backgroundColor: Colors.white12,
+                  ),
+                ),
+              ),
+            Positioned(
+              top: 8,
+              right: 8,
+              child: IconButton(
+                icon: const Icon(Icons.close, color: Colors.white),
+                onPressed: () => Navigator.of(context).pop(),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
