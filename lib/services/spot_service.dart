@@ -5,6 +5,7 @@ import '../models/spot.dart';
 import '../models/spot_detail.dart';
 import '../models/new_spot.dart';
 import '../utils/mock_data.dart';
+import 'api_headers.dart';
 import 'app_logger.dart';
 
 class SpotResult {
@@ -41,10 +42,7 @@ class SpotService {
           'limit': '100',
         },
       );
-      final headers = <String, String>{'Accept': 'application/json'};
-      if (authToken != null && authToken.isNotEmpty) {
-        headers['Authorization'] = 'Bearer $authToken';
-      }
+      final headers = ApiHeaders.build(authToken ?? '');
       AppLogger.log('[SpotService] GET $uri');
       final response = await http
           .get(uri, headers: headers)
@@ -109,12 +107,8 @@ class SpotService {
   static Future<SpotDetailResult> fetchSpotDetail(int spotId, String authToken) async {
     try {
       final uri = Uri.parse('$_spotsUrl/$spotId');
-      final headers = <String, String>{
-        'Accept': 'application/json',
-        'Authorization': 'Bearer $authToken',
-      };
       AppLogger.log('[SpotService] GET $uri');
-      final response = await http.get(uri, headers: headers).timeout(const Duration(seconds: 10));
+      final response = await http.get(uri, headers: ApiHeaders.build(authToken)).timeout(const Duration(seconds: 10));
       AppLogger.log('[SpotService] detail status=${response.statusCode} body=${response.body}');
       if (response.statusCode == 200) {
         final body = jsonDecode(response.body);
@@ -142,14 +136,9 @@ class SpotService {
 
   static Future<SpotResult> createSpot(NewSpot spot, String authToken) async {
     try {
-      final headers = <String, String>{
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        'Authorization': 'Bearer $authToken',
-      };
       AppLogger.log('[SpotService] POST $_spotsUrl');
       final response = await http
-          .post(Uri.parse(_spotsUrl), headers: headers, body: jsonEncode(spot.toJson()))
+          .post(Uri.parse(_spotsUrl), headers: ApiHeaders.build(authToken, json: true), body: jsonEncode(spot.toJson()))
           .timeout(const Duration(seconds: 10));
       AppLogger.log('[SpotService] create status=${response.statusCode} body=${response.body}');
       if (response.statusCode == 200 || response.statusCode == 201) {
@@ -177,12 +166,8 @@ class SpotService {
       if (lat != null) params['lat'] = lat.toString();
       if (lon != null) params['lon'] = lon.toString();
       final uri = Uri.parse(_spotsUrl).replace(queryParameters: params);
-      final headers = <String, String>{
-        'Accept': 'application/json',
-        'Authorization': 'Bearer $authToken',
-      };
       AppLogger.log('[SpotService] GET $uri (search)');
-      final response = await http.get(uri, headers: headers).timeout(const Duration(seconds: 10));
+      final response = await http.get(uri, headers: ApiHeaders.build(authToken)).timeout(const Duration(seconds: 10));
       if (response.statusCode == 200) {
         final body = jsonDecode(response.body);
         final List<dynamic> list;

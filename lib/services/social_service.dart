@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'api_headers.dart';
 import 'app_logger.dart';
 
 class LikeResult {
@@ -18,11 +19,6 @@ class FollowResult {
 }
 
 class SocialService {
-  static Map<String, String> _headers(String authToken) => {
-        'Accept': 'application/json',
-        'Authorization': 'Bearer $authToken',
-      };
-
   static int? _parseCount(http.Response response) {
     try {
       final body = jsonDecode(response.body);
@@ -39,7 +35,7 @@ class SocialService {
     try {
       final uri = Uri.parse('https://nolla.net/api/v1/media/$mediaId/like');
       AppLogger.log('[SocialService] POST $uri');
-      final response = await http.post(uri, headers: _headers(authToken)).timeout(const Duration(seconds: 10));
+      final response = await http.post(uri, headers: ApiHeaders.build(authToken)).timeout(const Duration(seconds: 10));
       AppLogger.log('[SocialService] like status=${response.statusCode}');
       if (response.statusCode == 200 || response.statusCode == 201 || response.statusCode == 204) {
         return LikeResult(success: true, newCount: _parseCount(response));
@@ -55,7 +51,7 @@ class SocialService {
     try {
       final uri = Uri.parse('https://nolla.net/api/v1/media/$mediaId/like');
       AppLogger.log('[SocialService] DELETE $uri');
-      final response = await http.delete(uri, headers: _headers(authToken)).timeout(const Duration(seconds: 10));
+      final response = await http.delete(uri, headers: ApiHeaders.build(authToken)).timeout(const Duration(seconds: 10));
       AppLogger.log('[SocialService] unlike status=${response.statusCode}');
       if (response.statusCode == 200 || response.statusCode == 204) {
         return LikeResult(success: true, newCount: _parseCount(response));
@@ -71,7 +67,7 @@ class SocialService {
     try {
       final uri = Uri.parse('https://nolla.net/api/v1/users/$username/follow');
       AppLogger.log('[SocialService] POST $uri');
-      final response = await http.post(uri, headers: _headers(authToken)).timeout(const Duration(seconds: 10));
+      final response = await http.post(uri, headers: ApiHeaders.build(authToken)).timeout(const Duration(seconds: 10));
       AppLogger.log('[SocialService] follow status=${response.statusCode}');
       if (response.statusCode == 200 || response.statusCode == 201 || response.statusCode == 204) {
         return const FollowResult(success: true);
@@ -87,7 +83,7 @@ class SocialService {
     try {
       final uri = Uri.parse('https://nolla.net/api/v1/users/$username/follow');
       AppLogger.log('[SocialService] DELETE $uri');
-      final response = await http.delete(uri, headers: _headers(authToken)).timeout(const Duration(seconds: 10));
+      final response = await http.delete(uri, headers: ApiHeaders.build(authToken)).timeout(const Duration(seconds: 10));
       AppLogger.log('[SocialService] unfollow status=${response.statusCode}');
       if (response.statusCode == 200 || response.statusCode == 204) {
         return const FollowResult(success: true);

@@ -6,6 +6,7 @@ import '../models/profile.dart';
 import '../models/public_profile.dart';
 import '../models/media_item.dart';
 import '../models/spot.dart';
+import 'api_headers.dart';
 import 'app_logger.dart';
 
 class ProfileResult {
@@ -29,22 +30,16 @@ class PublicProfileResult {
 }
 
 class ProfileService {
-  static const String _profileUrl = 'https://nolla.net/api/v1/user';
+  static const String _userUrl = 'https://nolla.net/api/v1/user';
 
   static bool _isCors(Object e) =>
       kIsWeb && (e.toString().contains('XMLHttpRequest') || e.toString().contains('Load failed'));
 
-  static Map<String, String> _headers(String authToken) => {
-    'Content-Type': 'application/json',
-    'Accept': 'application/json',
-    'Authorization': 'Bearer $authToken',
-  };
-
   static Future<ProfileResult> fetchProfile(String authToken) async {
     try {
-      AppLogger.log('[ProfileService] GET $_profileUrl');
+      AppLogger.log('[ProfileService] GET $_userUrl');
       final response = await http
-          .get(Uri.parse(_profileUrl), headers: _headers(authToken))
+          .get(Uri.parse(_userUrl), headers: ApiHeaders.build(authToken))
           .timeout(const Duration(seconds: 10));
       AppLogger.log('[ProfileService] status=${response.statusCode} body=${response.body}');
 
@@ -73,18 +68,17 @@ class ProfileService {
 
   static Future<ProfileResult> updateProfile(String authToken, Profile profile) async {
     try {
-      AppLogger.log('[ProfileService] PUT $_profileUrl');
+      AppLogger.log('[ProfileService] PUT $_userUrl');
       final response = await http
           .put(
-            Uri.parse(_profileUrl),
-            headers: _headers(authToken),
+            Uri.parse(_userUrl),
+            headers: ApiHeaders.build(authToken, json: true),
             body: jsonEncode(profile.toJson()),
           )
           .timeout(const Duration(seconds: 10));
       AppLogger.log('[ProfileService] status=${response.statusCode} body=${response.body}');
 
       if (response.statusCode == 200 || response.statusCode == 204) {
-        // Some APIs return the updated profile, others return 204 No Content
         if (response.body.isNotEmpty) {
           try {
             final body = jsonDecode(response.body);
@@ -120,6 +114,7 @@ class ProfileService {
         ..headers.addAll({
           'Accept': 'application/json',
           'Authorization': 'Bearer $authToken',
+          if (ApiHeaders.sessionCookie != null) 'Cookie': ApiHeaders.sessionCookie!,
         });
       final ext = filePath.split('.').last.toLowerCase();
       final mimeType = ext == 'png' ? 'image/png' : 'image/jpeg';
@@ -162,7 +157,7 @@ class ProfileService {
     try {
       final uri = Uri.parse('https://nolla.net/api/v1/users/$username');
       AppLogger.log('[ProfileService] GET $uri');
-      final response = await http.get(uri, headers: _headers(authToken)).timeout(const Duration(seconds: 10));
+      final response = await http.get(uri, headers: ApiHeaders.build(authToken)).timeout(const Duration(seconds: 10));
       if (response.statusCode == 200) {
         final body = jsonDecode(response.body);
         final Map<String, dynamic> data;
@@ -183,7 +178,7 @@ class ProfileService {
   static Future<List<Spot>> fetchUserSpots(String username, String authToken) async {
     try {
       final uri = Uri.parse('https://nolla.net/api/v1/users/$username/spots');
-      final response = await http.get(uri, headers: _headers(authToken)).timeout(const Duration(seconds: 10));
+      final response = await http.get(uri, headers: ApiHeaders.build(authToken)).timeout(const Duration(seconds: 10));
       if (response.statusCode == 200) {
         final body = jsonDecode(response.body);
         final List<dynamic> list;
@@ -213,7 +208,7 @@ class ProfileService {
   static Future<List<MediaItem>> fetchUserMedia(String username, String authToken) async {
     try {
       final uri = Uri.parse('https://nolla.net/api/v1/users/$username/media');
-      final response = await http.get(uri, headers: _headers(authToken)).timeout(const Duration(seconds: 10));
+      final response = await http.get(uri, headers: ApiHeaders.build(authToken)).timeout(const Duration(seconds: 10));
       if (response.statusCode == 200) {
         final body = jsonDecode(response.body);
         final List<dynamic> list;

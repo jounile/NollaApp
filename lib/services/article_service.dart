@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../models/article.dart';
 import '../utils/mock_data.dart';
+import 'api_headers.dart';
 import 'app_logger.dart';
 
 class ArticleResult {
@@ -30,11 +31,7 @@ class ArticleService {
         'per_page': limit.toString(),
       });
       AppLogger.log('[ArticleService] GET $uri');
-      final headers = {
-        'Accept': 'application/json',
-        if (authToken != null) 'Authorization': 'Bearer $authToken',
-      };
-      final response = await http.get(uri, headers: headers).timeout(const Duration(seconds: 10));
+      final response = await http.get(uri, headers: ApiHeaders.build(authToken ?? '')).timeout(const Duration(seconds: 10));
       AppLogger.log('[ArticleService] status=${response.statusCode}');
 
       if (response.statusCode == 200) {

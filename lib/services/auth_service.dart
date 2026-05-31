@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'api_headers.dart';
 
 class AuthResult {
   final bool success;
@@ -23,7 +24,14 @@ class AuthService {
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         final message = data['message'] as String? ?? 'Login successful';
-        final token = data['token'] as String?;
+        // Try common token field names
+        final token = data['token'] as String? ??
+            data['access_token'] as String? ??
+            data['jwt'] as String? ??
+            data['auth_token'] as String? ??
+            data['key'] as String?;
+        // Capture session cookie for cookie-based auth
+        ApiHeaders.sessionCookie = ApiHeaders.parseCookies(response.headers['set-cookie']);
         return AuthResult(success: true, message: message, token: token);
       } else {
         final data = jsonDecode(response.body) as Map<String, dynamic>? ?? {};

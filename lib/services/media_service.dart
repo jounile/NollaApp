@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 import 'package:image_picker/image_picker.dart';
+import 'api_headers.dart';
 import 'app_logger.dart';
 
 class UploadResult {
@@ -41,9 +42,13 @@ class MediaService {
       );
 
       // MultipartRequest.headers returns a computed copy each call, so we
-      // capture it once and then inject Authorization into that same map.
+      // capture it once and then inject auth headers into that same map.
       final headers = multipart.headers;
       headers['Authorization'] = 'Bearer $authToken';
+      final cookie = ApiHeaders.sessionCookie;
+      if (cookie != null && cookie.isNotEmpty) {
+        headers['Cookie'] = cookie;
+      }
       final body = await multipart.finalize().toBytes();
 
       final response = await http

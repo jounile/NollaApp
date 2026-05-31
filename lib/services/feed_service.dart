@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../models/media_item.dart';
+import 'api_headers.dart';
 import 'app_logger.dart';
 
 class FeedResult {
@@ -20,11 +21,6 @@ class FeedResult {
 class FeedService {
   static const String _feedUrl = 'https://nolla.net/api/v1/feed';
 
-  static Map<String, String> _headers(String authToken) => {
-        'Accept': 'application/json',
-        'Authorization': 'Bearer $authToken',
-      };
-
   static Future<FeedResult> fetchFeed(String authToken, {int page = 1, int limit = 20}) async {
     try {
       final uri = Uri.parse(_feedUrl).replace(queryParameters: {
@@ -32,7 +28,9 @@ class FeedService {
         'per_page': limit.toString(),
       });
       AppLogger.log('[FeedService] GET $uri');
-      final response = await http.get(uri, headers: _headers(authToken)).timeout(const Duration(seconds: 10));
+      final response = await http
+          .get(uri, headers: ApiHeaders.build(authToken))
+          .timeout(const Duration(seconds: 10));
       AppLogger.log('[FeedService] status=${response.statusCode}');
       if (response.statusCode == 200) {
         final body = jsonDecode(response.body);
@@ -76,7 +74,9 @@ class FeedService {
     try {
       final uri = Uri.parse('https://nolla.net/api/v1/spots/$spotId/media');
       AppLogger.log('[FeedService] GET $uri');
-      final response = await http.get(uri, headers: _headers(authToken)).timeout(const Duration(seconds: 10));
+      final response = await http
+          .get(uri, headers: ApiHeaders.build(authToken))
+          .timeout(const Duration(seconds: 10));
       if (response.statusCode == 200) {
         final body = jsonDecode(response.body);
         final List<dynamic> list;
