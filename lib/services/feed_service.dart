@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../models/media_item.dart';
 import 'api_headers.dart';
+import 'app_http_client.dart';
 import 'app_logger.dart';
 
 class FeedResult {
@@ -28,7 +29,7 @@ class FeedService {
         'per_page': limit.toString(),
       });
       AppLogger.log('[FeedService] GET $uri');
-      final response = await http
+      final response = await appHttpClient
           .get(uri, headers: ApiHeaders.build(authToken))
           .timeout(const Duration(seconds: 10));
       AppLogger.log('[FeedService] status=${response.statusCode}');
@@ -74,7 +75,7 @@ class FeedService {
     try {
       final uri = Uri.parse('https://nolla.net/api/v1/spots/$spotId/media');
       AppLogger.log('[FeedService] GET $uri');
-      final response = await http
+      final response = await appHttpClient
           .get(uri, headers: ApiHeaders.build(authToken))
           .timeout(const Duration(seconds: 10));
       if (response.statusCode == 200) {

@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import '../models/article.dart';
 import '../utils/mock_data.dart';
 import 'api_headers.dart';
+import 'app_http_client.dart';
 import 'app_logger.dart';
 
 class ArticleResult {
@@ -31,7 +32,7 @@ class ArticleService {
         'per_page': limit.toString(),
       });
       AppLogger.log('[ArticleService] GET $uri');
-      final response = await http.get(uri, headers: ApiHeaders.build(authToken ?? '')).timeout(const Duration(seconds: 10));
+      final response = await appHttpClient.get(uri, headers: ApiHeaders.build(authToken ?? '')).timeout(const Duration(seconds: 10));
       AppLogger.log('[ArticleService] status=${response.statusCode}');
 
       if (response.statusCode == 200) {

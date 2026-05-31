@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../models/comment.dart';
 import 'api_headers.dart';
+import 'app_http_client.dart';
 import 'app_logger.dart';
 
 class CommentsResult {
@@ -17,7 +18,7 @@ class CommentService {
     try {
       final uri = Uri.parse('https://nolla.net/api/v1/media/$mediaId/comments');
       AppLogger.log('[CommentService] GET $uri');
-      final response = await http.get(uri, headers: ApiHeaders.build(authToken)).timeout(const Duration(seconds: 10));
+      final response = await appHttpClient.get(uri, headers: ApiHeaders.build(authToken)).timeout(const Duration(seconds: 10));
       AppLogger.log('[CommentService] fetchComments status=${response.statusCode}');
       if (response.statusCode == 200) {
         final body = jsonDecode(response.body);
@@ -52,7 +53,7 @@ class CommentService {
     try {
       final uri = Uri.parse('https://nolla.net/api/v1/media/$mediaId/comments');
       AppLogger.log('[CommentService] POST $uri');
-      final response = await http
+      final response = await appHttpClient
           .post(
             uri,
             headers: ApiHeaders.build(authToken, json: true),

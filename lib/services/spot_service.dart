@@ -6,6 +6,7 @@ import '../models/spot_detail.dart';
 import '../models/new_spot.dart';
 import '../utils/mock_data.dart';
 import 'api_headers.dart';
+import 'app_http_client.dart';
 import 'app_logger.dart';
 
 class SpotResult {
@@ -44,7 +45,7 @@ class SpotService {
       );
       final headers = ApiHeaders.build(authToken ?? '');
       AppLogger.log('[SpotService] GET $uri');
-      final response = await http
+      final response = await appHttpClient
           .get(uri, headers: headers)
           .timeout(const Duration(seconds: 10));
       AppLogger.log('[SpotService] status=${response.statusCode} body=${response.body}');
@@ -108,7 +109,7 @@ class SpotService {
     try {
       final uri = Uri.parse('$_spotsUrl/$spotId');
       AppLogger.log('[SpotService] GET $uri');
-      final response = await http.get(uri, headers: ApiHeaders.build(authToken)).timeout(const Duration(seconds: 10));
+      final response = await appHttpClient.get(uri, headers: ApiHeaders.build(authToken)).timeout(const Duration(seconds: 10));
       AppLogger.log('[SpotService] detail status=${response.statusCode} body=${response.body}');
       if (response.statusCode == 200) {
         final body = jsonDecode(response.body);
@@ -137,7 +138,7 @@ class SpotService {
   static Future<SpotResult> createSpot(NewSpot spot, String authToken) async {
     try {
       AppLogger.log('[SpotService] POST $_spotsUrl');
-      final response = await http
+      final response = await appHttpClient
           .post(Uri.parse(_spotsUrl), headers: ApiHeaders.build(authToken, json: true), body: jsonEncode(spot.toJson()))
           .timeout(const Duration(seconds: 10));
       AppLogger.log('[SpotService] create status=${response.statusCode} body=${response.body}');
@@ -167,7 +168,7 @@ class SpotService {
       if (lon != null) params['lon'] = lon.toString();
       final uri = Uri.parse(_spotsUrl).replace(queryParameters: params);
       AppLogger.log('[SpotService] GET $uri (search)');
-      final response = await http.get(uri, headers: ApiHeaders.build(authToken)).timeout(const Duration(seconds: 10));
+      final response = await appHttpClient.get(uri, headers: ApiHeaders.build(authToken)).timeout(const Duration(seconds: 10));
       if (response.statusCode == 200) {
         final body = jsonDecode(response.body);
         final List<dynamic> list;

@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 import 'package:image_picker/image_picker.dart';
 import 'api_headers.dart';
+import 'app_http_client.dart';
 import 'app_logger.dart';
 
 class UploadResult {
@@ -51,7 +52,7 @@ class MediaService {
       }
       final body = await multipart.finalize().toBytes();
 
-      final response = await http
+      final response = await appHttpClient
           .post(Uri.parse(_uploadUrl), headers: headers, body: body)
           .timeout(const Duration(minutes: 5));
 
