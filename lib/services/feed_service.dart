@@ -59,11 +59,6 @@ class FeedService {
         final items = <MediaItem>[];
         for (final e in list) {
           try {
-            final mediatypeId = (e['mediatype_id'] as num?)?.toInt();
-            if (mediatypeId != 6) {
-              AppLogger.log('[FeedService] skipped item id=${e['id']} mediatype_id=$mediatypeId (not 6)');
-              continue;
-            }
             final item = MediaItem.fromJson(e as Map<String, dynamic>);
             AppLogger.log('[FeedService] item id=${item.id} type=${item.mediaType} rawType=${e['media_type'] ?? e['type'] ?? e['mediatype_id']} url=${item.url} viewUrl=${item.viewUrl} thumb=${item.thumbnailUrl}');
             items.add(item);
