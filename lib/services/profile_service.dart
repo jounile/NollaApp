@@ -29,7 +29,7 @@ class PublicProfileResult {
 }
 
 class ProfileService {
-  static const String _profileUrl = 'https://nolla.net/api/v1/profile';
+  static const String _profileUrl = 'https://nolla.net/api/v1/user';
 
   static Map<String, String> _headers(String authToken) => {
     'Content-Type': 'application/json',
@@ -103,7 +103,7 @@ class ProfileService {
 
   static Future<ProfileResult> uploadAvatar(String authToken, String filePath) async {
     try {
-      final uri = Uri.parse('https://nolla.net/api/v1/profile/avatar');
+      final uri = Uri.parse('https://nolla.net/api/v1/user/avatar');
       AppLogger.log('[ProfileService] POST $uri (avatar upload)');
       final request = http.MultipartRequest('POST', uri)
         ..headers.addAll({
