@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 import '../models/profile.dart';
@@ -7,6 +8,7 @@ import '../models/media_item.dart';
 import '../models/spot.dart';
 import 'app_http_client.dart';
 import 'app_logger.dart';
+import 'user_cache.dart';
 
 class ProfileResult {
   final bool success;
@@ -60,6 +62,13 @@ class ProfileService {
         }
         return ProfileResult(success: true, profile: Profile.fromJson(data));
       } else if (response.statusCode == 401) {
+        if (kIsWeb) {
+          final cached = UserCache.loginUserData;
+          if (cached != null) {
+            AppLogger.log('[ProfileService] web 401 — using login user data as profile');
+            return ProfileResult(success: true, profile: Profile.fromJson(cached));
+          }
+        }
         return const ProfileResult(success: false, message: 'Session expired — please log in again');
       } else if (response.statusCode == 404) {
         return const ProfileResult(success: false, message: 'Profile endpoint not found');

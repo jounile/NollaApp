@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'app_http_client.dart';
 import 'app_logger.dart';
+import 'user_cache.dart';
 
 class AuthResult {
   final bool success;
@@ -31,6 +32,8 @@ class AuthService {
         final message = data['message'] as String? ?? 'Login successful';
         final rawToken = data['token'] ?? data['access_token'] ?? data['jwt'] ?? data['auth_token'] ?? data['key'];
         final token = rawToken is String ? rawToken : null;
+        final userData = data['user'] as Map<String, dynamic>?;
+        if (userData != null) UserCache.loginUserData = userData;
         AppLogger.log('[AuthService] token=${token != null ? "present (${token.length} chars)" : "null — will rely on session cookie"}');
         return AuthResult(success: true, message: message, token: token);
       } else {
