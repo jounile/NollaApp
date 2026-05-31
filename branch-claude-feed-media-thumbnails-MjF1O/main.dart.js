@@ -30013,8 +30013,8 @@ k=a1==null?A.aG(a0.h(a3,"file_url")):a1
 if(k==null)k=""
 j=A.aG(a0.h(a3,"media_type"))
 if(j==null)j=A.aG(a0.h(a3,"type"))
-if(j!=null)i=A.aYW(j)
-else i=a0.h(a3,a)!=null?A.aYV(a0.h(a3,a)):A.aYU(k)
+if(a0.h(a3,a)!=null)i=A.aYV(a0.h(a3,a))
+else i=j!=null?A.aYW(j):A.aYU(k)
 h=i==="video"?"mp4-thumbs":"photos-thumbs"
 a1=A.aG(a0.h(a3,"thumbnail_url"))
 if(a1==null)a1=A.aG(a0.h(a3,"thumbnail"))
