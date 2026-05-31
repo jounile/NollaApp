@@ -102727,7 +102727,7 @@ var $async$Da=A.C(function(a1,a2){if(a1===1){o=a2
 s=p}while(true)switch(s){case 0:p=4
 f=t.N
 s=7
-return A.H($.f1().j6("POST",A.cH("https://nolla.net/auth/api/login"),A.aF(["Content-Type","application/json"],f,f),B.ae.wD(A.aF(["username",a,"password",a0],f,f),null),null).dY(0,B.oy),$async$Da)
+return A.H($.f1().j6("POST",A.cH("https://nolla.net/api/v1/auth/login"),A.aF(["Content-Type","application/json"],f,f),B.ae.wD(A.aF(["username",a,"password",a0],f,f),null),null).dY(0,B.oy),$async$Da)
 case 7:n=a2
 e=n
 A.bi("[AuthService] status="+n.b+" body="+A.du(A.ds(e.e)).c9(0,e.w))
