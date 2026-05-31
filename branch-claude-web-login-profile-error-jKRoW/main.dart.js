@@ -30927,9 +30927,9 @@ QW(a){return A.aZV(a)},
 aZV(a){var s=0,r=A.G(t.dy),q,p=2,o,n,m,l,k,j,i,h,g
 var $async$QW=A.C(function(b,c){if(b===1){o=c
 s=p}while(true)switch(s){case 0:p=4
-A.bs("[ProfileService] GET https://nolla.net/api/v1/profile")
+A.bs("[ProfileService] GET https://nolla.net/api/v1/user")
 s=7
-return A.H($.yN().oP("GET",A.cH("https://nolla.net/api/v1/profile"),A.QV(a)).dY(0,B.aY),$async$QW)
+return A.H($.yN().oP("GET",A.cH("https://nolla.net/api/v1/user"),A.QV(a)).dY(0,B.aY),$async$QW)
 case 7:n=c
 j=n
 A.bs("[ProfileService] status="+n.b+" body="+A.dD(A.dC(j.e)).cd(0,j.w))
@@ -30973,9 +30973,9 @@ aja(a,b){return A.aZZ(a,b)},
 aZZ(a,b){var s=0,r=A.G(t.dy),q,p=2,o,n,m,l,k,j,i,h,g
 var $async$aja=A.C(function(c,d){if(c===1){o=d
 s=p}while(true)switch(s){case 0:p=4
-A.bs("[ProfileService] PUT https://nolla.net/api/v1/profile")
+A.bs("[ProfileService] PUT https://nolla.net/api/v1/user")
 s=7
-return A.H($.yN().oQ("PUT",A.cH("https://nolla.net/api/v1/profile"),A.QV(a),B.ae.wD(b.eV(),null),null).dY(0,B.aY),$async$aja)
+return A.H($.yN().oQ("PUT",A.cH("https://nolla.net/api/v1/user"),A.QV(a),B.ae.wD(b.eV(),null),null).dY(0,B.aY),$async$aja)
 case 7:n=d
 j=n
 A.bs("[ProfileService] status="+n.b+" body="+A.dD(A.dC(j.e)).cd(0,j.w))
@@ -31018,7 +31018,7 @@ ajb(a,b){return A.b__(a,b)},
 b__(a,b){var s=0,r=A.G(t.dy),q,p=2,o,n,m,l,k,j,i,h,g,f,e
 var $async$ajb=A.C(function(c,d){if(c===1){o=d
 s=p}while(true)switch(s){case 0:p=4
-n=A.cH("https://nolla.net/api/v1/profile/avatar")
+n=A.cH("https://nolla.net/api/v1/user/avatar")
 A.bs("[ProfileService] POST "+A.h(n)+" (avatar upload)")
 i=A.aMl("POST",n)
 h=t.N
