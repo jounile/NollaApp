@@ -67,6 +67,10 @@ class _FeedScreenState extends State<FeedScreen> {
     return ids;
   }
 
+  int get _displayCount => _selectedMediatypeId == null
+      ? _items.where((e) => _availableMediatypeIds.contains(e.mediatypeId)).length
+      : _filteredItems.length;
+
   String _mediatypeLabel(int id) {
     switch (id) {
       case 1: return 'Photos';
@@ -188,7 +192,7 @@ class _FeedScreenState extends State<FeedScreen> {
                   Padding(
                     padding: const EdgeInsets.only(right: 12),
                     child: Text(
-                      '${_filteredItems.length}',
+                      '$_displayCount',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                             color: Theme.of(context).colorScheme.onSurfaceVariant,
                           ),
