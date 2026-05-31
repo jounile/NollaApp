@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import '../models/media_item.dart';
 import 'app_http_client.dart';
 import 'app_logger.dart';
@@ -71,6 +72,10 @@ class FeedService {
       return FeedResult(success: false, message: 'Failed to load feed (${response.statusCode})');
     } catch (e) {
       AppLogger.log('[FeedService] exception: $e');
+      final isCors = kIsWeb && (e.toString().contains('Load failed') || e.toString().contains('XMLHttpRequest'));
+      if (isCors) {
+        return const FeedResult(success: false, message: 'CORS error — API must allow web requests');
+      }
       return const FeedResult(success: false, message: 'Network error. Please check your connection.');
     }
   }
