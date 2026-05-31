@@ -101993,7 +101993,7 @@ A.uw.prototype={}
 A.o5.prototype={
 gNy(){var s=this,r=s.a
 if(r===0){r=s.c
-return r==null?s.b:r}if(s.d==="video")return"https://nolla.net/mp4/"+r+"_400.mp4"
+return r==null?s.b:r}if(s.d==="video")return"https://nolla.net/media/mp4/"+r+".mp4"
 return"https://nolla.net/media/photos/"+r+"_400.jpg"},
 KF(a,b,c){var s=this,r=c==null?s.y:c,q=a==null?s.z:a,p=b==null?s.Q:b
 return new A.o5(s.a,s.b,s.c,s.d,s.e,s.f,s.r,s.w,s.x,r,q,p,s.as)},
