@@ -1,8 +1,6 @@
 import 'dart:convert';
-import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../models/media_item.dart';
-import '../utils/mock_data.dart';
 import 'app_logger.dart';
 
 class FeedResult {
@@ -10,14 +8,12 @@ class FeedResult {
   final String? message;
   final List<MediaItem> items;
   final bool hasMore;
-  final bool isMockData;
 
   const FeedResult({
     required this.success,
     this.message,
     this.items = const [],
     this.hasMore = false,
-    this.isMockData = false,
   });
 }
 
@@ -28,9 +24,6 @@ class FeedService {
         'Accept': 'application/json',
         'Authorization': 'Bearer $authToken',
       };
-
-  static bool _isCors(Object e) =>
-      kIsWeb && (e.toString().contains('XMLHttpRequest') || e.toString().contains('Load failed'));
 
   static Future<FeedResult> fetchFeed(String authToken, {int page = 1, int limit = 20}) async {
     try {
@@ -50,7 +43,6 @@ class FeedService {
         } else if (body is Map<String, dynamic>) {
           final raw = body['media'] ?? body['items'] ?? body['data'] ?? body['results'];
           list = raw is List ? raw : [];
-          // API wraps pagination info in a 'meta' object: {page, per_page, total, pages}
           final meta = body['meta'] as Map<String, dynamic>?;
           final total = (meta?['total'] as num?)?.toInt() ?? (body['total'] as num?)?.toInt();
           final pages = (meta?['pages'] as num?)?.toInt();
@@ -73,14 +65,13 @@ class FeedService {
         }
         return FeedResult(success: true, items: items, hasMore: hasMore);
       }
+      if (response.statusCode == 401) {
+        return const FeedResult(success: false, message: 'Session expired — please log in again');
+      }
       return FeedResult(success: false, message: 'Failed to load feed (${response.statusCode})');
     } catch (e) {
       AppLogger.log('[FeedService] exception: $e');
-      if (_isCors(e)) {
-        AppLogger.log('[FeedService] CORS error — returning mock data for web preview');
-        return FeedResult(success: true, items: List.unmodifiable(mockFeedItems), isMockData: true);
-      }
-      return const FeedResult(success: false, message: 'Network error');
+      return const FeedResult(success: false, message: 'Network error. Please check your connection.');
     }
   }
 

@@ -1,25 +1,21 @@
 import 'dart:convert';
-import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 import '../models/profile.dart';
 import '../models/public_profile.dart';
 import '../models/media_item.dart';
 import '../models/spot.dart';
-import '../utils/mock_data.dart';
 import 'app_logger.dart';
 
 class ProfileResult {
   final bool success;
   final String? message;
   final Profile? profile;
-  final bool isMockData;
 
   const ProfileResult({
     required this.success,
     this.message,
     this.profile,
-    this.isMockData = false,
   });
 }
 
@@ -33,9 +29,6 @@ class PublicProfileResult {
 
 class ProfileService {
   static const String _profileUrl = 'https://nolla.net/api/v1/profile';
-
-  static bool _isCors(Object e) =>
-      kIsWeb && (e.toString().contains('XMLHttpRequest') || e.toString().contains('Load failed'));
 
   static Map<String, String> _headers(String authToken) => {
     'Content-Type': 'application/json',
@@ -55,34 +48,20 @@ class ProfileService {
         final body = jsonDecode(response.body);
         final Map<String, dynamic> data;
         if (body is Map<String, dynamic>) {
-          // Unwrap common envelope keys
           data = (body['profile'] ?? body['user'] ?? body['data'] ?? body) as Map<String, dynamic>;
         } else {
           return const ProfileResult(success: false, message: 'Unexpected response format');
         }
         return ProfileResult(success: true, profile: Profile.fromJson(data));
       } else if (response.statusCode == 401) {
-        if (kIsWeb) {
-          AppLogger.log('[ProfileService] web 401 — returning mock profile');
-          return const ProfileResult(success: true, profile: mockProfile, isMockData: true);
-        }
         return const ProfileResult(success: false, message: 'Session expired — please log in again');
+      } else if (response.statusCode == 404) {
+        return const ProfileResult(success: false, message: 'Profile endpoint not found');
       } else {
-        if (kIsWeb) {
-          AppLogger.log('[ProfileService] web API error (${response.statusCode}) — returning mock profile');
-          return const ProfileResult(success: true, profile: mockProfile, isMockData: true);
-        }
-        if (response.statusCode == 404) {
-          return const ProfileResult(success: false, message: 'Profile endpoint not found — API may not support this yet');
-        }
         return ProfileResult(success: false, message: 'Failed to load profile (${response.statusCode})');
       }
     } catch (e) {
       AppLogger.log('[ProfileService] exception: $e');
-      if (_isCors(e)) {
-        AppLogger.log('[ProfileService] CORS — returning mock profile');
-        return const ProfileResult(success: true, profile: mockProfile, isMockData: true);
-      }
       return const ProfileResult(success: false, message: 'Network error. Please check your connection.');
     }
   }
@@ -100,7 +79,6 @@ class ProfileService {
       AppLogger.log('[ProfileService] status=${response.statusCode} body=${response.body}');
 
       if (response.statusCode == 200 || response.statusCode == 204) {
-        // Some APIs return the updated profile, others return 204 No Content
         if (response.body.isNotEmpty) {
           try {
             final body = jsonDecode(response.body);
@@ -118,13 +96,7 @@ class ProfileService {
       }
     } catch (e) {
       AppLogger.log('[ProfileService] exception: $e');
-      final isCors = kIsWeb && e.toString().contains('XMLHttpRequest');
-      return ProfileResult(
-        success: false,
-        message: isCors
-            ? 'Cannot save profile on web — server CORS policy blocks this request'
-            : 'Network error. Please check your connection.',
-      );
+      return const ProfileResult(success: false, message: 'Network error. Please check your connection.');
     }
   }
 
@@ -164,13 +136,7 @@ class ProfileService {
       return ProfileResult(success: false, message: 'Upload failed (${response.statusCode})');
     } catch (e) {
       AppLogger.log('[ProfileService] avatar upload exception: $e');
-      final isCors = kIsWeb && e.toString().contains('XMLHttpRequest');
-      return ProfileResult(
-        success: false,
-        message: isCors
-            ? 'Cannot upload avatar on web — server CORS policy blocks this request'
-            : 'Failed to upload avatar',
-      );
+      return const ProfileResult(success: false, message: 'Failed to upload avatar');
     }
   }
 
