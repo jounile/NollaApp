@@ -78,9 +78,9 @@ class ProfileService {
 
   static Future<ProfileResult> updateProfile(String authToken, Profile profile) async {
     try {
-      AppLogger.log('[ProfileService] PUT $_profileUrl');
+      AppLogger.log('[ProfileService] PATCH $_profileUrl');
       final response = await appHttpClient
-          .put(
+          .patch(
             Uri.parse(_profileUrl),
             headers: _jsonHeaders(authToken),
             body: jsonEncode(profile.toJson()),
@@ -101,6 +101,8 @@ class ProfileService {
         return ProfileResult(success: true, profile: profile);
       } else if (response.statusCode == 401) {
         return const ProfileResult(success: false, message: 'Session expired — please log in again');
+      } else if (response.statusCode == 405) {
+        return const ProfileResult(success: false, message: 'Save failed: API does not allow this operation');
       } else {
         return ProfileResult(success: false, message: 'Failed to save profile (${response.statusCode})');
       }

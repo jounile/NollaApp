@@ -7,6 +7,8 @@ class Profile {
   final String? avatarUrl;
   final int followerCount;
   final int followingCount;
+  final int spotCount;
+  final int mediaCount;
 
   const Profile({
     required this.username,
@@ -17,6 +19,8 @@ class Profile {
     this.avatarUrl,
     this.followerCount = 0,
     this.followingCount = 0,
+    this.spotCount = 0,
+    this.mediaCount = 0,
   });
 
   factory Profile.fromJson(Map<String, dynamic> json) {
@@ -33,6 +37,14 @@ class Profile {
           0,
       followingCount: (json['following_count'] as num?)?.toInt() ??
           (json['following'] as num?)?.toInt() ??
+          0,
+      spotCount: (json['spot_count'] as num?)?.toInt() ??
+          (json['spots_count'] as num?)?.toInt() ??
+          (json['spots'] as num?)?.toInt() ??
+          0,
+      mediaCount: (json['media_count'] as num?)?.toInt() ??
+          (json['photos_count'] as num?)?.toInt() ??
+          (json['media'] as num?)?.toInt() ??
           0,
     );
   }
@@ -59,5 +71,7 @@ class Profile {
     avatarUrl: avatarUrl ?? this.avatarUrl,
     followerCount: followerCount,
     followingCount: followingCount,
+    spotCount: spotCount,
+    mediaCount: mediaCount,
   );
 }

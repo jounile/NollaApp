@@ -243,6 +243,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               _StatChip(
+                                label: 'Spots',
+                                count: _profile!.spotCount,
+                                theme: theme,
+                              ),
+                              const SizedBox(width: 24),
+                              _StatChip(
+                                label: 'Media',
+                                count: _profile!.mediaCount,
+                                theme: theme,
+                              ),
+                              const SizedBox(width: 24),
+                              _StatChip(
                                 label: 'Followers',
                                 count: _profile!.followerCount,
                                 theme: theme,
