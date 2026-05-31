@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'package:http/http.dart' as http;
 import 'app_http_client.dart';
 import 'api_headers.dart';
 import 'app_logger.dart';
