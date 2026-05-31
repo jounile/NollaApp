@@ -75,12 +75,12 @@ class MediaItem {
 
     final url = json['url'] as String? ?? json['file_url'] as String? ?? '';
 
-    // API uses mediatype_id: 1=image/photo, 2=video; type may be 'mp4', 'video/mp4', etc.
+    // mediatype_id is authoritative (1=photo, 5/6=video); fall back to string type, then URL extension.
     final rawType = json['media_type'] as String? ?? json['type'] as String?;
-    final mediaType = rawType != null
-        ? _normalizeMediaType(rawType)
-        : json['mediatype_id'] != null
-            ? _mediaTypeFromId(json['mediatype_id'])
+    final mediaType = json['mediatype_id'] != null
+        ? _mediaTypeFromId(json['mediatype_id'])
+        : rawType != null
+            ? _normalizeMediaType(rawType)
             : _inferTypeFromUrl(url);
     final thumbDir = mediaType == 'video' ? 'mp4-thumbs' : 'photos-thumbs';
 
