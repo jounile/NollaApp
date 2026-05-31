@@ -118,6 +118,6 @@ class MediaItem {
   static String _mediaTypeFromId(dynamic id) {
     if (id == null) return 'photo';
     final n = id is num ? id.toInt() : int.tryParse(id.toString());
-    return n == 2 ? 'video' : 'photo';
+    return (n == 5 || n == 6) ? 'video' : 'photo';
   }
 }
