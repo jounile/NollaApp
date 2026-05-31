@@ -29,6 +29,12 @@ class MediaItem {
     this.createdAt,
   });
 
+  String get viewUrl {
+    if (id == 0) return thumbnailUrl ?? url;
+    final dir = mediaType == 'video' ? 'mp4-thumbs' : 'photos-thumbs';
+    return 'https://nolla.net/media/$dir/${id}_400.jpg';
+  }
+
   MediaItem copyWith({bool? isLikedByMe, int? likeCount, int? commentCount}) => MediaItem(
         id: id,
         url: url,

@@ -288,20 +288,23 @@ class _MediaCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (displayUrl.isNotEmpty)
-            AspectRatio(
-              aspectRatio: 16 / 9,
-              child: Image.network(
-                displayUrl,
-                fit: BoxFit.cover,
-                loadingBuilder: (ctx, child, progress) => progress == null
-                    ? child
-                    : Container(
-                        color: theme.colorScheme.surfaceContainerHighest,
-                        child: const Center(child: CircularProgressIndicator()),
-                      ),
-                errorBuilder: (_, __, ___) => Container(
-                  color: theme.colorScheme.surfaceContainerHighest,
-                  child: const Center(child: Icon(Icons.broken_image_outlined, size: 40)),
+            GestureDetector(
+              onTap: () => _openMediaView(context, item.viewUrl),
+              child: AspectRatio(
+                aspectRatio: 16 / 9,
+                child: Image.network(
+                  displayUrl,
+                  fit: BoxFit.cover,
+                  loadingBuilder: (ctx, child, progress) => progress == null
+                      ? child
+                      : Container(
+                          color: theme.colorScheme.surfaceContainerHighest,
+                          child: const Center(child: CircularProgressIndicator()),
+                        ),
+                  errorBuilder: (_, __, ___) => Container(
+                    color: theme.colorScheme.surfaceContainerHighest,
+                    child: const Center(child: Icon(Icons.broken_image_outlined, size: 40)),
+                  ),
                 ),
               ),
             ),
@@ -440,6 +443,40 @@ class _MediaCard extends StatelessWidget {
       ),
     );
   }
+}
+
+void _openMediaView(BuildContext context, String url) {
+  showDialog<void>(
+    context: context,
+    builder: (_) => Dialog.fullscreen(
+      backgroundColor: Colors.black,
+      child: Stack(
+        children: [
+          Center(
+            child: InteractiveViewer(
+              child: Image.network(
+                url,
+                fit: BoxFit.contain,
+                loadingBuilder: (ctx, child, progress) => progress == null
+                    ? child
+                    : const Center(child: CircularProgressIndicator(color: Colors.white)),
+                errorBuilder: (_, __, ___) =>
+                    const Center(child: Icon(Icons.broken_image_outlined, size: 48, color: Colors.white54)),
+              ),
+            ),
+          ),
+          Positioned(
+            top: 16,
+            right: 16,
+            child: IconButton(
+              icon: const Icon(Icons.close, color: Colors.white),
+              onPressed: () => Navigator.of(context).pop(),
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
 }
 
 String _relativeTime(String? iso) {
