@@ -29993,38 +29993,39 @@ _.b=a
 _.c=b
 _.d=c
 _.e=d},
-aMl(a0){var s,r,q,p,o,n,m,l,k,j,i,h,g,f=null,e="username",d="display_name",c=J.au(a0),b=c.h(a0,"uploader"),a=b==null?c.h(a0,"user"):b
-if(a==null)a=c.h(a0,"author")
+aMl(a0){var s,r,q,p,o,n,m,l,k,j,i,h,g,f=null,e="username",d="display_name",c=J.au(a0),b=A.d0(c.h(a0,"id")),a=b==null?f:B.c.a5(b)
+if(a==null)a=0
+b=c.h(a0,"uploader")
+s=b==null?c.h(a0,"user"):b
+if(s==null)s=c.h(a0,"author")
 b=t.P
-if(b.b(a)){s=J.au(a)
-r=A.aD(s.h(a,e))
-if(r==null)r=""
-q=A.aD(s.h(a,d))
-if(q==null)q=A.aD(s.h(a,"displayName"))
-p=q==null?A.aD(s.h(a,"name")):q
-if(p==null)p=r}else{s=A.aD(c.h(a0,"owner"))
-if(s==null)s=A.aD(c.h(a0,e))
-r=s==null?A.aD(c.h(a0,"uploader_username")):s
-if(r==null)r=""
-s=A.aD(c.h(a0,d))
-p=s==null?A.aD(c.h(a0,"uploader_name")):s
-if(p==null)p=r}o=c.h(a0,"spot")
-if(b.b(o)){b=J.au(o)
-s=A.d0(b.h(o,"id"))
-n=s==null?f:B.c.a5(s)
-m=A.aD(b.h(o,"name"))}else{b=A.d0(c.h(a0,"spot_id"))
-n=b==null?f:B.c.a5(b)
-m=A.aD(c.h(a0,"spot_name"))}b=A.d0(c.h(a0,"id"))
-b=b==null?f:B.c.a5(b)
-if(b==null)b=0
-s=A.aD(c.h(a0,"url"))
-if(s==null)s=A.aD(c.h(a0,"file_url"))
-if(s==null)s=""
-q=A.aD(c.h(a0,"thumbnail_url"))
-if(q==null)q=A.aD(c.h(a0,"thumbnail"))
-l=A.aD(c.h(a0,"media_type"))
-if(l==null)l=A.aD(c.h(a0,"type"))
-if(l==null)l=A.aYW(c.h(a0,"mediatype_id"))
+if(b.b(s)){r=J.au(s)
+q=A.aD(r.h(s,e))
+if(q==null)q=""
+p=A.aD(r.h(s,d))
+if(p==null)p=A.aD(r.h(s,"displayName"))
+o=p==null?A.aD(r.h(s,"name")):p
+if(o==null)o=q}else{r=A.aD(c.h(a0,"owner"))
+if(r==null)r=A.aD(c.h(a0,e))
+q=r==null?A.aD(c.h(a0,"uploader_username")):r
+if(q==null)q=""
+r=A.aD(c.h(a0,d))
+o=r==null?A.aD(c.h(a0,"uploader_name")):r
+if(o==null)o=q}n=c.h(a0,"spot")
+if(b.b(n)){b=J.au(n)
+r=A.d0(b.h(n,"id"))
+m=r==null?f:B.c.a5(r)
+l=A.aD(b.h(n,"name"))}else{b=A.d0(c.h(a0,"spot_id"))
+m=b==null?f:B.c.a5(b)
+l=A.aD(c.h(a0,"spot_name"))}b=A.aD(c.h(a0,"url"))
+if(b==null)b=A.aD(c.h(a0,"file_url"))
+if(b==null)b=""
+r=A.aD(c.h(a0,"thumbnail_url"))
+if(r==null)r=A.aD(c.h(a0,"thumbnail"))
+if(r==null)r=a>0?"https://nollanetsa.blob.core.windows.net/media/photos-thumbs/id_"+a+".jpg":f
+p=A.aD(c.h(a0,"media_type"))
+if(p==null)p=A.aD(c.h(a0,"type"))
+if(p==null)p=A.aYW(c.h(a0,"mediatype_id"))
 k=A.aD(c.h(a0,"description"))
 j=A.d0(c.h(a0,"like_count"))
 j=j==null?f:B.c.a5(j)
@@ -30038,7 +30039,7 @@ h=A.hR(c.h(a0,"is_liked_by_me"))
 if(h==null)h=A.hR(c.h(a0,"liked"))
 g=A.aD(c.h(a0,"created_at"))
 c=g==null?A.aD(c.h(a0,"createdAt")):g
-return new A.nX(b,s,q,l,r,p,n,m,k,j,i,h===!0,c)},
+return new A.nX(a,b,r,p,q,o,m,l,k,j,i,h===!0,c)},
 aYW(a){if(a==null)return"photo"
 return(typeof a=="number"?B.c.a5(a):A.Db(J.cj(a),null))===2?"video":"photo"},
 nX:function nX(a,b,c,d,e,f,g,h,i,j,k,l,m){var _=this
