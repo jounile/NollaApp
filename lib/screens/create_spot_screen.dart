@@ -300,6 +300,7 @@ class _LocationPickerPageState extends State<_LocationPickerPage> {
               maxZoom: 19,
               onPositionChanged: (camera, _) {
                 final c = camera.center;
+                if (c == null) return;
                 if (!c.latitude.isFinite || !c.longitude.isFinite) return;
                 setState(() => _center = c);
               },
