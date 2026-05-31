@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 import '../models/media_item.dart';
@@ -450,7 +451,7 @@ void _openMediaView(BuildContext context, MediaItem item, String authToken) {
   if (item.mediaType == 'video') {
     Navigator.of(context).push<void>(MaterialPageRoute(
       fullscreenDialog: true,
-      builder: (_) => _VideoPlayerView(url: item.viewUrl, authToken: authToken),
+      builder: (_) => _VideoPlayerView(url: item.viewUrl, rawUrl: item.url, authToken: authToken),
     ));
   } else {
     showDialog<void>(
@@ -489,8 +490,9 @@ void _openMediaView(BuildContext context, MediaItem item, String authToken) {
 
 class _VideoPlayerView extends StatefulWidget {
   final String url;
+  final String rawUrl;
   final String authToken;
-  const _VideoPlayerView({required this.url, required this.authToken});
+  const _VideoPlayerView({required this.url, required this.rawUrl, required this.authToken});
 
   @override
   State<_VideoPlayerView> createState() => _VideoPlayerViewState();
@@ -500,12 +502,18 @@ class _VideoPlayerViewState extends State<_VideoPlayerView> {
   late VideoPlayerController _controller;
   bool _initialized = false;
   String? _error;
+  bool _triedFallback = false;
 
   @override
   void initState() {
     super.initState();
+    _startPlayback(widget.url);
+  }
+
+  void _startPlayback(String url) {
+    AppLogger.log('[VideoPlayer] loading $url');
     _controller = VideoPlayerController.networkUrl(
-      Uri.parse(widget.url),
+      Uri.parse(url),
       httpHeaders: {'Authorization': 'Bearer ${widget.authToken}'},
     )
       ..initialize().then((_) {
@@ -513,8 +521,18 @@ class _VideoPlayerViewState extends State<_VideoPlayerView> {
         setState(() => _initialized = true);
         _controller.play();
       }).catchError((Object e) {
+        AppLogger.log('[VideoPlayer] failed url=$url error=$e');
         if (!mounted) return;
-        setState(() => _error = 'Could not load video');
+        if (!_triedFallback && widget.rawUrl.isNotEmpty && widget.rawUrl != url) {
+          _triedFallback = true;
+          AppLogger.log('[VideoPlayer] retrying with rawUrl=${widget.rawUrl}');
+          _controller.dispose();
+          _startPlayback(widget.rawUrl);
+        } else {
+          setState(() => _error = kIsWeb
+              ? 'Cannot play video in browser (auth headers not supported)'
+              : 'Could not load video');
+        }
       });
     _controller.addListener(() {
       if (mounted) setState(() {});
