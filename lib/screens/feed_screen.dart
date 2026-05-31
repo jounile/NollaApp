@@ -61,13 +61,14 @@ class _FeedScreenState extends State<FeedScreen> {
     });
   }
 
-  // -1 is a sentinel for "Other" (items with null mediatypeId)
+  // -1 is a sentinel for the "Other" filter
   static const int _otherFilterId = -1;
+  static const Set<int> _primaryMediatypeIds = {1, 6};
 
   List<MediaItem> get _filteredItems {
     if (_selectedMediatypeId == null) return _items;
     if (_selectedMediatypeId == _otherFilterId) {
-      return _items.where((e) => e.mediatypeId == null).toList();
+      return _items.where((e) => e.mediatypeId == null || !_primaryMediatypeIds.contains(e.mediatypeId)).toList();
     }
     return _items.where((e) => e.mediatypeId == _selectedMediatypeId).toList();
   }
