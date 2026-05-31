@@ -36,7 +36,7 @@ class ProfileService {
   static bool _isCors(Object e) =>
       kIsWeb && (e.toString().contains('XMLHttpRequest') || e.toString().contains('Load failed'));
 
-  static Future<ProfileResult> fetchProfile(String authToken, {String? username}) async {
+  static Future<ProfileResult> fetchProfile(String authToken) async {
     try {
       final headers = ApiHeaders.build(authToken);
       AppLogger.log('[ProfileService] GET $_userUrl headers=$headers');
@@ -54,10 +54,6 @@ class ProfileService {
           return const ProfileResult(success: false, message: 'Unexpected response format');
         }
         return ProfileResult(success: true, profile: Profile.fromJson(data));
-      } else if (response.statusCode == 401 && username != null) {
-        // Fall back to the public profile endpoint (no auth required, like /api/v1/spots)
-        AppLogger.log('[ProfileService] 401 on private endpoint — falling back to public profile for $username');
-        return _fetchPublicAsProfile(username, authToken);
       } else if (response.statusCode == 401) {
         return const ProfileResult(success: false, message: 'Session expired — please log in again');
       } else {
@@ -65,36 +61,11 @@ class ProfileService {
       }
     } catch (e) {
       AppLogger.log('[ProfileService] exception: $e');
-      if (_isCors(e) && username != null) {
-        AppLogger.log('[ProfileService] CORS on private endpoint — falling back to public profile for $username');
-        return _fetchPublicAsProfile(username, authToken);
-      }
       if (_isCors(e)) {
-        return const ProfileResult(success: false, message: 'Cannot load profile on web — server CORS policy blocks this request');
+        return const ProfileResult(success: false, message: 'Cannot load profile — server CORS policy blocks this request');
       }
       return const ProfileResult(success: false, message: 'Network error. Please check your connection.');
     }
-  }
-
-  static Future<ProfileResult> _fetchPublicAsProfile(String username, String authToken) async {
-    final publicResult = await fetchPublicProfile(username, authToken);
-    if (publicResult.success && publicResult.profile != null) {
-      final pub = publicResult.profile!;
-      return ProfileResult(
-        success: true,
-        profile: Profile(
-          username: pub.username,
-          displayName: pub.displayName,
-          bio: pub.bio ?? '',
-          email: '',
-          website: '',
-          avatarUrl: pub.avatarUrl,
-          followerCount: pub.followerCount,
-          followingCount: pub.followingCount,
-        ),
-      );
-    }
-    return ProfileResult(success: false, message: publicResult.message ?? 'Failed to load profile');
   }
 
   static Future<ProfileResult> updateProfile(String authToken, Profile profile) async {
