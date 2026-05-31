@@ -49,7 +49,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       _loading = true;
       _errorMessage = null;
     });
-    final result = await ProfileService.fetchProfile(widget.authToken);
+    final result = await ProfileService.fetchProfile(widget.authToken, username: widget.username);
     if (!mounted) return;
     if (result.success && result.profile != null) {
       _applyProfile(result.profile!);
