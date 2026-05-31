@@ -46,6 +46,7 @@ class MediaItem {
       );
 
   factory MediaItem.fromJson(Map<String, dynamic> json) {
+    final id = (json['id'] as num?)?.toInt() ?? 0;
     final uploader = json['uploader'] ?? json['user'] ?? json['author'];
     String uploaderUsername = '';
     String uploaderDisplayName = '';
@@ -73,9 +74,11 @@ class MediaItem {
     }
 
     return MediaItem(
-      id: (json['id'] as num?)?.toInt() ?? 0,
+      id: id,
       url: json['url'] as String? ?? json['file_url'] as String? ?? '',
-      thumbnailUrl: json['thumbnail_url'] as String? ?? json['thumbnail'] as String?,
+      thumbnailUrl: json['thumbnail_url'] as String? ??
+          json['thumbnail'] as String? ??
+          (id != 0 ? 'https://nolla.net/media/photos-thumbs/${id}_100.jpg' : null),
       // API uses mediatype_id: 1=image/photo, 2=video
       mediaType: json['media_type'] as String? ?? json['type'] as String? ?? _mediaTypeFromId(json['mediatype_id']),
       uploaderUsername: uploaderUsername,
