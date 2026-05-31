@@ -159,26 +159,41 @@ class _FeedScreenState extends State<FeedScreen> {
           if (!_isLoading && _availableMediatypeIds.isNotEmpty)
             SizedBox(
               height: 48,
-              child: ListView(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              child: Row(
                 children: [
-                  Padding(
-                    padding: const EdgeInsets.only(right: 8),
-                    child: FilterChip(
-                      label: const Text('All'),
-                      selected: _selectedMediatypeId == null,
-                      onSelected: (_) => setState(() => _selectedMediatypeId = null),
+                  Expanded(
+                    child: ListView(
+                      scrollDirection: Axis.horizontal,
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.only(right: 8),
+                          child: FilterChip(
+                            label: const Text('All'),
+                            selected: _selectedMediatypeId == null,
+                            onSelected: (_) => setState(() => _selectedMediatypeId = null),
+                          ),
+                        ),
+                        ..._availableMediatypeIds.map((id) => Padding(
+                              padding: const EdgeInsets.only(right: 8),
+                              child: FilterChip(
+                                label: Text(_mediatypeLabel(id)),
+                                selected: _selectedMediatypeId == id,
+                                onSelected: (_) => setState(() => _selectedMediatypeId = id),
+                              ),
+                            )),
+                      ],
                     ),
                   ),
-                  ..._availableMediatypeIds.map((id) => Padding(
-                        padding: const EdgeInsets.only(right: 8),
-                        child: FilterChip(
-                          label: Text(_mediatypeLabel(id)),
-                          selected: _selectedMediatypeId == id,
-                          onSelected: (_) => setState(() => _selectedMediatypeId = id),
-                        ),
-                      )),
+                  Padding(
+                    padding: const EdgeInsets.only(right: 12),
+                    child: Text(
+                      '${_filteredItems.length}',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          ),
+                    ),
+                  ),
                 ],
               ),
             ),
