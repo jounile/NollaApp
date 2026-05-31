@@ -514,7 +514,9 @@ class _VideoPlayerViewState extends State<_VideoPlayerView> {
     AppLogger.log('[VideoPlayer] loading $url');
     _controller = VideoPlayerController.networkUrl(
       Uri.parse(url),
-      httpHeaders: {'Authorization': 'Bearer ${widget.authToken}'},
+      // web: <video> element cannot send custom headers, so omit them and rely
+      // on the media files being publicly accessible static assets.
+      httpHeaders: kIsWeb ? {} : {'Authorization': 'Bearer ${widget.authToken}'},
     )
       ..initialize().then((_) {
         if (!mounted) return;
@@ -529,9 +531,7 @@ class _VideoPlayerViewState extends State<_VideoPlayerView> {
           _controller.dispose();
           _startPlayback(widget.rawUrl);
         } else {
-          setState(() => _error = kIsWeb
-              ? 'Cannot play video in browser (auth headers not supported)'
-              : 'Could not load video');
+          setState(() => _error = 'Could not load video');
         }
       });
     _controller.addListener(() {
