@@ -188,9 +188,7 @@ class _FeedScreenState extends State<FeedScreen> {
                   Padding(
                     padding: const EdgeInsets.only(right: 12),
                     child: Text(
-                      _selectedMediatypeId == null
-                          ? '${_items.length}'
-                          : '${_filteredItems.length} / ${_items.length}',
+                      '${_filteredItems.length}',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                             color: Theme.of(context).colorScheme.onSurfaceVariant,
                           ),
