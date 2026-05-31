@@ -30039,8 +30039,10 @@ return"photo"},
 aYU(a){var s=B.b.gW(a.toLowerCase().split("?"))
 if(B.d.jl(s,".mp4")||B.d.jl(s,".mov")||B.d.jl(s,".webm")||B.d.jl(s,".m4v"))return"video"
 return"photo"},
-aYV(a){if(a==null)return"photo"
-return(typeof a=="number"?B.c.a5(a):A.D8(J.c6(a),null))===2?"video":"photo"},
+aYV(a){var s
+if(a==null)return"photo"
+s=typeof a=="number"?B.c.a5(a):A.D8(J.c6(a),null)
+return s===5||s===6?"video":"photo"},
 nX:function nX(a,b,c,d,e,f,g,h,i,j,k,l,m){var _=this
 _.a=a
 _.b=b
