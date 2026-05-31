@@ -31432,7 +31432,7 @@ akd(a,b){return A.b16(a,b)},
 b16(a4,a5){var s=0,r=A.C(t.y3),q,p=2,o,n,m,l,k,j,i,h,g,f,e,d,c,b,a,a0,a1,a2,a3
 var $async$akd=A.y(function(a6,a7){if(a6===1){o=a7
 s=p}while(true)switch(s){case 0:p=4
-n=A.cF("https://nolla.net/api/v1/user/"+a4)
+n=A.cF("https://nolla.net/api/v1/users/"+a4)
 A.bh("[ProfileService] GET "+A.h(n))
 s=7
 return A.F($.tW().oR("GET",n,A.akc(a5)).e_(0,B.b0),$async$akd)
