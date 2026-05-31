@@ -78,9 +78,9 @@ class ProfileService {
 
   static Future<ProfileResult> updateProfile(String authToken, Profile profile) async {
     try {
-      AppLogger.log('[ProfileService] PUT $_profileUrl');
+      AppLogger.log('[ProfileService] POST $_profileUrl');
       final response = await appHttpClient
-          .put(
+          .post(
             Uri.parse(_profileUrl),
             headers: _jsonHeaders(authToken),
             body: jsonEncode(profile.toJson()),
@@ -91,10 +91,9 @@ class ProfileService {
       if (response.statusCode == 200 || response.statusCode == 204) {
         if (response.body.isNotEmpty) {
           try {
-            final body = jsonDecode(response.body);
-            if (body is Map<String, dynamic>) {
-              final data = (body['profile'] ?? body['user'] ?? body['data'] ?? body) as Map<String, dynamic>;
-              return ProfileResult(success: true, profile: Profile.fromJson(data));
+            final parsed = jsonDecode(response.body);
+            if (parsed is Map<String, dynamic>) {
+              return ProfileResult(success: true, profile: Profile.fromJson(parsed));
             }
           } catch (_) {}
         }
