@@ -1,6 +1,6 @@
 import 'dart:convert';
-import 'package:http/http.dart' as http;
 import 'api_headers.dart';
+import 'app_http_client.dart';
 import 'app_logger.dart';
 
 class AuthResult {
@@ -14,13 +14,9 @@ class AuthResult {
 class AuthService {
   static const String _loginUrl = 'https://nolla.net/auth/api/login';
 
-  // A plain client without withCredentials — the login endpoint uses
-  // Access-Control-Allow-Origin: * which is incompatible with credentials.
-  static final _loginClient = http.Client();
-
   Future<AuthResult> login(String username, String password) async {
     try {
-      final response = await _loginClient
+      final response = await appHttpClient
           .post(
             Uri.parse(_loginUrl),
             headers: {'Content-Type': 'application/json'},
