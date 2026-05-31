@@ -3,6 +3,7 @@ class MediaItem {
   final String url;
   final String? thumbnailUrl;
   final String mediaType;
+  final int? mediatypeId;
   final String uploaderUsername;
   final String uploaderDisplayName;
   final int? spotId;
@@ -18,6 +19,7 @@ class MediaItem {
     required this.url,
     this.thumbnailUrl,
     required this.mediaType,
+    this.mediatypeId,
     required this.uploaderUsername,
     required this.uploaderDisplayName,
     this.spotId,
@@ -46,6 +48,7 @@ class MediaItem {
         url: url,
         thumbnailUrl: thumbnailUrl,
         mediaType: mediaType,
+        mediatypeId: mediatypeId,
         uploaderUsername: uploaderUsername,
         uploaderDisplayName: uploaderDisplayName,
         spotId: spotId,
@@ -88,9 +91,10 @@ class MediaItem {
     final url = json['url'] as String? ?? json['file_url'] as String? ?? '';
 
     // mediatype_id is authoritative (1=photo, 5/6=video); fall back to string type, then URL extension.
+    final rawMediatypeId = (json['mediatype_id'] as num?)?.toInt();
     final rawType = json['media_type'] as String? ?? json['type'] as String?;
-    final mediaType = json['mediatype_id'] != null
-        ? _mediaTypeFromId(json['mediatype_id'])
+    final mediaType = rawMediatypeId != null
+        ? _mediaTypeFromId(rawMediatypeId)
         : rawType != null
             ? _normalizeMediaType(rawType)
             : _inferTypeFromUrl(url);
@@ -103,6 +107,7 @@ class MediaItem {
           json['thumbnail'] as String? ??
           (id != 0 ? 'https://nolla.net/media/$thumbDir/${id}_100.jpg' : null),
       mediaType: mediaType,
+      mediatypeId: rawMediatypeId,
       uploaderUsername: uploaderUsername,
       uploaderDisplayName: uploaderDisplayName,
       spotId: spotId,
@@ -127,9 +132,7 @@ class MediaItem {
     return 'photo';
   }
 
-  static String _mediaTypeFromId(dynamic id) {
-    if (id == null) return 'photo';
-    final n = id is num ? id.toInt() : int.tryParse(id.toString());
-    return (n == 5 || n == 6) ? 'video' : 'photo';
+  static String _mediaTypeFromId(int id) {
+    return (id == 5 || id == 6) ? 'video' : 'photo';
   }
 }
