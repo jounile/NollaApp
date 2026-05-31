@@ -187,7 +187,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           IconButton(
             icon: const Icon(Icons.terminal),
             tooltip: 'View logs',
-            onPressed: () => showLogViewer(context, filter: const ['[ProfileService]']),
+            onPressed: () => showLogViewer(context, filter: const ['[ProfileService]', '[AuthService]']),
           ),
           if (_loading || _saving)
             const Padding(
