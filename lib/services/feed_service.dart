@@ -32,6 +32,9 @@ class FeedService {
           .get(uri, headers: ApiHeaders.build(authToken))
           .timeout(const Duration(seconds: 10));
       AppLogger.log('[FeedService] status=${response.statusCode}');
+      if (response.statusCode == 401) {
+        return const FeedResult(success: false, message: 'Session expired — please log in again');
+      }
       if (response.statusCode == 200) {
         final body = jsonDecode(response.body);
         final List<dynamic> list;

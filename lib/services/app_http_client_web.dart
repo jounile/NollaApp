@@ -1,6 +1,7 @@
 import 'package:http/browser_client.dart';
 import 'package:http/http.dart' as http;
 
-// withCredentials = true makes the browser send the nolla.net session
-// cookie on every cross-origin API request, exactly like a browser page would.
-final http.Client appHttpClient = BrowserClient()..withCredentials = true;
+// nolla.net uses Access-Control-Allow-Origin: * which is incompatible with
+// withCredentials = true. Use a plain BrowserClient so cross-origin requests
+// are not blocked by CORS preflight.
+final http.Client appHttpClient = BrowserClient();
