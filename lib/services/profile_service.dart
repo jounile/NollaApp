@@ -37,9 +37,10 @@ class ProfileService {
 
   static Future<ProfileResult> fetchProfile(String authToken) async {
     try {
-      AppLogger.log('[ProfileService] GET $_userUrl');
+      final headers = ApiHeaders.build(authToken);
+      AppLogger.log('[ProfileService] GET $_userUrl headers=$headers');
       final response = await http
-          .get(Uri.parse(_userUrl), headers: ApiHeaders.build(authToken))
+          .get(Uri.parse(_userUrl), headers: headers)
           .timeout(const Duration(seconds: 10));
       AppLogger.log('[ProfileService] status=${response.statusCode} body=${response.body}');
 

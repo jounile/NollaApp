@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'api_headers.dart';
+import 'app_logger.dart';
 
 class AuthResult {
   final bool success;
@@ -21,6 +22,10 @@ class AuthService {
         body: jsonEncode({'username': username, 'password': password}),
       );
 
+      AppLogger.log('[AuthService] login status=${response.statusCode}');
+      AppLogger.log('[AuthService] response body=${response.body}');
+      AppLogger.log('[AuthService] response headers=${response.headers}');
+
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         final message = data['message'] as String? ?? 'Login successful';
@@ -31,14 +36,19 @@ class AuthService {
             data['auth_token'] as String? ??
             data['key'] as String?;
         // Capture session cookie for cookie-based auth
-        ApiHeaders.sessionCookie = ApiHeaders.parseCookies(response.headers['set-cookie']);
+        final rawCookie = response.headers['set-cookie'];
+        ApiHeaders.sessionCookie = ApiHeaders.parseCookies(rawCookie);
+        AppLogger.log('[AuthService] token=${token != null ? "present(${token.length} chars)" : "null"}');
+        AppLogger.log('[AuthService] set-cookie header=${rawCookie ?? "null"}');
+        AppLogger.log('[AuthService] parsed sessionCookie=${ApiHeaders.sessionCookie ?? "null"}');
         return AuthResult(success: true, message: message, token: token);
       } else {
         final data = jsonDecode(response.body) as Map<String, dynamic>? ?? {};
         final message = data['message'] as String? ?? 'Invalid credentials';
         return AuthResult(success: false, message: message);
       }
-    } catch (_) {
+    } catch (e) {
+      AppLogger.log('[AuthService] exception: $e');
       return const AuthResult(
         success: false,
         message: 'Network error. Please check your connection.',
