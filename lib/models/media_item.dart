@@ -73,14 +73,20 @@ class MediaItem {
       spotName = json['spot_name'] as String?;
     }
 
+    final url = json['url'] as String? ?? json['file_url'] as String? ?? '';
+
     // API uses mediatype_id: 1=image/photo, 2=video; type may be 'mp4', 'video/mp4', etc.
     final rawType = json['media_type'] as String? ?? json['type'] as String?;
-    final mediaType = rawType != null ? _normalizeMediaType(rawType) : _mediaTypeFromId(json['mediatype_id']);
+    final mediaType = rawType != null
+        ? _normalizeMediaType(rawType)
+        : json['mediatype_id'] != null
+            ? _mediaTypeFromId(json['mediatype_id'])
+            : _inferTypeFromUrl(url);
     final thumbDir = mediaType == 'video' ? 'mp4-thumbs' : 'photos-thumbs';
 
     return MediaItem(
       id: id,
-      url: json['url'] as String? ?? json['file_url'] as String? ?? '',
+      url: url,
       thumbnailUrl: json['thumbnail_url'] as String? ??
           json['thumbnail'] as String? ??
           (id != 0 ? 'https://nolla.net/media/$thumbDir/${id}_100.jpg' : null),
@@ -100,6 +106,12 @@ class MediaItem {
   static String _normalizeMediaType(String raw) {
     final lower = raw.toLowerCase();
     if (lower == 'video' || lower == 'mp4' || lower.startsWith('video/')) return 'video';
+    return 'photo';
+  }
+
+  static String _inferTypeFromUrl(String url) {
+    final lower = url.toLowerCase().split('?').first;
+    if (lower.endsWith('.mp4') || lower.endsWith('.mov') || lower.endsWith('.webm') || lower.endsWith('.m4v')) return 'video';
     return 'photo';
   }
 
