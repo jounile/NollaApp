@@ -61,24 +61,33 @@ class _FeedScreenState extends State<FeedScreen> {
     });
   }
 
-  List<MediaItem> get _filteredItems => _selectedMediatypeId == null
-      ? _items
-      : _items.where((e) => e.mediatypeId == _selectedMediatypeId).toList();
+  // -1 is a sentinel for "Other" (items with null mediatypeId)
+  static const int _otherFilterId = -1;
+
+  List<MediaItem> get _filteredItems {
+    if (_selectedMediatypeId == null) return _items;
+    if (_selectedMediatypeId == _otherFilterId) {
+      return _items.where((e) => e.mediatypeId == null).toList();
+    }
+    return _items.where((e) => e.mediatypeId == _selectedMediatypeId).toList();
+  }
 
   List<int> get _availableMediatypeIds {
     final ids = _items.map((e) => e.mediatypeId).whereType<int>().toSet().toList()..sort();
     return ids;
   }
 
+  bool get _hasOtherItems => _items.any((e) => e.mediatypeId == null);
+
   int get _displayCount => _selectedMediatypeId == null
-      ? _serverTotal ?? _items.where((e) => _availableMediatypeIds.contains(e.mediatypeId)).length
+      ? _serverTotal ?? _items.length
       : _filteredItems.length;
 
   String _mediatypeLabel(int id) {
     switch (id) {
-      case 1: return 'Photos';
+      case 1: return 'Photos (1)';
       case 5: return 'Video (5)';
-      case 6: return 'Video';
+      case 6: return 'Video (6)';
       default: return 'Type $id';
     }
   }
@@ -163,7 +172,7 @@ class _FeedScreenState extends State<FeedScreen> {
       ),
       body: Column(
         children: [
-          if (!_isLoading && _availableMediatypeIds.isNotEmpty)
+          if (!_isLoading && (_availableMediatypeIds.isNotEmpty || _hasOtherItems))
             SizedBox(
               height: 48,
               child: Row(
@@ -189,6 +198,15 @@ class _FeedScreenState extends State<FeedScreen> {
                                 onSelected: (_) => setState(() => _selectedMediatypeId = id),
                               ),
                             )),
+                        if (_hasOtherItems)
+                          Padding(
+                            padding: const EdgeInsets.only(right: 8),
+                            child: FilterChip(
+                              label: const Text('Other'),
+                              selected: _selectedMediatypeId == _otherFilterId,
+                              onSelected: (_) => setState(() => _selectedMediatypeId = _otherFilterId),
+                            ),
+                          ),
                       ],
                     ),
                   ),
