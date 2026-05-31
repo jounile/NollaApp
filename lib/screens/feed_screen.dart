@@ -29,7 +29,6 @@ class _FeedScreenState extends State<FeedScreen> {
   String? _error;
   int? _selectedMediatypeId;
   int? _serverTotal;
-  final Map<int, int> _serverTotalByType = {};
 
   @override
   void initState() {
@@ -44,7 +43,6 @@ class _FeedScreenState extends State<FeedScreen> {
         _page = 1;
         _error = null;
         _serverTotal = null;
-        _serverTotalByType.clear();
       });
     }
     final result = await FeedService.fetchFeed(widget.authToken, page: _page);
@@ -61,16 +59,6 @@ class _FeedScreenState extends State<FeedScreen> {
         _error = result.message;
       }
     });
-    if (refresh && result.success) _fetchTypeTotals();
-  }
-
-  Future<void> _fetchTypeTotals() async {
-    final types = _items.map((e) => e.mediatypeId).whereType<int>().toSet();
-    for (final id in types) {
-      final total = await FeedService.fetchTotalForType(id, widget.authToken);
-      if (!mounted) return;
-      if (total != null) setState(() => _serverTotalByType[id] = total);
-    }
   }
 
   List<MediaItem> get _filteredItems => _selectedMediatypeId == null
@@ -82,15 +70,9 @@ class _FeedScreenState extends State<FeedScreen> {
     return ids;
   }
 
-  int get _displayCount {
-    if (_selectedMediatypeId != null) {
-      return _serverTotalByType[_selectedMediatypeId] ?? _filteredItems.length;
-    }
-    if (_serverTotalByType.isNotEmpty) {
-      return _serverTotalByType.values.fold(0, (s, v) => s + v);
-    }
-    return _serverTotal ?? _items.where((e) => _availableMediatypeIds.contains(e.mediatypeId)).length;
-  }
+  int get _displayCount => _selectedMediatypeId == null
+      ? _serverTotal ?? _items.where((e) => _availableMediatypeIds.contains(e.mediatypeId)).length
+      : _filteredItems.length;
 
   String _mediatypeLabel(int id) {
     switch (id) {

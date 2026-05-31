@@ -87,30 +87,6 @@ class FeedService {
     }
   }
 
-  static Future<int?> fetchTotalForType(int mediatypeId, String authToken) async {
-    try {
-      final uri = Uri.parse(_mediaUrl).replace(queryParameters: {
-        'mediatype_id': mediatypeId.toString(),
-        'per_page': '1',
-        'page': '1',
-      });
-      AppLogger.log('[FeedService] GET $uri (count probe)');
-      final response = await appHttpClient.get(uri, headers: _headers(authToken)).timeout(const Duration(seconds: 10));
-      if (response.statusCode == 200) {
-        final body = jsonDecode(response.body);
-        if (body is Map<String, dynamic>) {
-          final meta = body['meta'] as Map<String, dynamic>?;
-          final total = (meta?['total'] as num?)?.toInt() ?? (body['total'] as num?)?.toInt();
-          AppLogger.log('[FeedService] type=$mediatypeId total=$total');
-          return total;
-        }
-      }
-    } catch (e) {
-      AppLogger.log('[FeedService] fetchTotalForType exception: $e');
-    }
-    return null;
-  }
-
   static Future<FeedResult> fetchSpotMedia(int spotId, String authToken) async {
     try {
       final uri = Uri.parse('https://nolla.net/api/v1/spots/$spotId/media');
