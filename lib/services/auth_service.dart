@@ -23,7 +23,7 @@ class AuthService {
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         final message = data['message'] as String? ?? 'Login successful';
-        final token = data['token'] as String?;
+        final token = (data['token'] ?? data['access_token'] ?? data['jwt'] ?? data['auth_token']) as String?;
         return AuthResult(success: true, message: message, token: token);
       } else {
         final data = jsonDecode(response.body) as Map<String, dynamic>? ?? {};

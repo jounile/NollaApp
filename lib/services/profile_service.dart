@@ -62,6 +62,10 @@ class ProfileService {
         }
         return ProfileResult(success: true, profile: Profile.fromJson(data));
       } else if (response.statusCode == 401) {
+        if (kIsWeb) {
+          AppLogger.log('[ProfileService] web 401 — returning mock profile');
+          return const ProfileResult(success: true, profile: mockProfile, isMockData: true);
+        }
         return const ProfileResult(success: false, message: 'Session expired — please log in again');
       } else {
         if (kIsWeb) {
