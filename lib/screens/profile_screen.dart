@@ -28,6 +28,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
   late final TextEditingController _bioCtrl = TextEditingController();
   late final TextEditingController _emailCtrl = TextEditingController();
   late final TextEditingController _websiteCtrl = TextEditingController();
+  late final TextEditingController _locationCtrl = TextEditingController();
+  late final TextEditingController _addressCtrl = TextEditingController();
+  late final TextEditingController _postnumberCtrl = TextEditingController();
+  late final TextEditingController _telephoneCtrl = TextEditingController();
+  late final TextEditingController _hobbiesCtrl = TextEditingController();
+  late final TextEditingController _youtubeCtrl = TextEditingController();
+  late final TextEditingController _bornyearCtrl = TextEditingController();
+  int? _genderValue;
 
   @override
   void initState() {
@@ -41,6 +49,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _bioCtrl.dispose();
     _emailCtrl.dispose();
     _websiteCtrl.dispose();
+    _locationCtrl.dispose();
+    _addressCtrl.dispose();
+    _postnumberCtrl.dispose();
+    _telephoneCtrl.dispose();
+    _hobbiesCtrl.dispose();
+    _youtubeCtrl.dispose();
+    _bornyearCtrl.dispose();
     super.dispose();
   }
 
@@ -53,9 +68,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     if (!mounted) return;
     if (result.success && result.profile != null) {
       _applyProfile(result.profile!);
-      setState(() {
-        _loading = false;
-      });
+      setState(() => _loading = false);
     } else {
       setState(() {
         _loading = false;
@@ -70,6 +83,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _bioCtrl.text = p.bio;
     _emailCtrl.text = p.email;
     _websiteCtrl.text = p.website;
+    _locationCtrl.text = p.location;
+    _addressCtrl.text = p.address;
+    _postnumberCtrl.text = p.postnumber;
+    _telephoneCtrl.text = p.telephone;
+    _hobbiesCtrl.text = p.hobbies;
+    _youtubeCtrl.text = p.youtube;
+    _bornyearCtrl.text = p.bornyear != null ? '${p.bornyear}' : '';
+    _genderValue = p.gender;
   }
 
   Future<void> _pickAndUploadAvatar() async {
@@ -117,6 +138,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
       bio: _bioCtrl.text.trim(),
       email: _emailCtrl.text.trim(),
       website: _websiteCtrl.text.trim(),
+      location: _locationCtrl.text.trim(),
+      address: _addressCtrl.text.trim(),
+      postnumber: _postnumberCtrl.text.trim(),
+      telephone: _telephoneCtrl.text.trim(),
+      hobbies: _hobbiesCtrl.text.trim(),
+      youtube: _youtubeCtrl.text.trim(),
+      bornyear: int.tryParse(_bornyearCtrl.text.trim()),
+      gender: _genderValue,
     );
 
     setState(() => _saving = true);
@@ -143,7 +172,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return _displayNameCtrl.text.trim() != p.displayName ||
         _bioCtrl.text.trim() != p.bio ||
         _emailCtrl.text.trim() != p.email ||
-        _websiteCtrl.text.trim() != p.website;
+        _websiteCtrl.text.trim() != p.website ||
+        _locationCtrl.text.trim() != p.location ||
+        _addressCtrl.text.trim() != p.address ||
+        _postnumberCtrl.text.trim() != p.postnumber ||
+        _telephoneCtrl.text.trim() != p.telephone ||
+        _hobbiesCtrl.text.trim() != p.hobbies ||
+        _youtubeCtrl.text.trim() != p.youtube ||
+        _bornyearCtrl.text.trim() != (p.bornyear != null ? '${p.bornyear}' : '') ||
+        _genderValue != p.gender;
   }
 
   String get _initials {
@@ -153,6 +190,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final parts = name.trim().split(RegExp(r'\s+'));
     if (parts.length >= 2) return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
     return name.isNotEmpty ? name[0].toUpperCase() : '?';
+  }
+
+  static const _genderOptions = [
+    (value: 0, label: 'Not specified'),
+    (value: 1, label: 'Male'),
+    (value: 2, label: 'Female'),
+    (value: 3, label: 'Other'),
+  ];
+
+  static String _genderLabel(int? v) {
+    if (v == null) return '—';
+    return _genderOptions.where((o) => o.value == v).map((o) => o.label).firstOrNull ?? '—';
   }
 
   @override
@@ -180,147 +229,245 @@ class _ProfileScreenState extends State<ProfileScreen> {
         }
       },
       child: Scaffold(
-      backgroundColor: theme.colorScheme.surface,
-      appBar: AppBar(
-        title: const Text('Profile'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.terminal),
-            tooltip: 'View logs',
-            onPressed: () => showLogViewer(context, filter: const ['[ProfileService]', '[AuthService]']),
-          ),
-          if (_loading || _saving)
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 16),
-              child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)),
-            )
-          else if (!_editing)
+        backgroundColor: theme.colorScheme.surface,
+        appBar: AppBar(
+          title: const Text('Profile'),
+          actions: [
             IconButton(
-              icon: const Icon(Icons.edit_outlined),
-              tooltip: 'Edit profile',
-              onPressed: _errorMessage == null ? _startEditing : null,
-            )
-          else ...[
-            TextButton(onPressed: _cancelEditing, child: const Text('Cancel')),
-            FilledButton(onPressed: _saveChanges, child: const Text('Save')),
-            const SizedBox(width: 8),
+              icon: const Icon(Icons.terminal),
+              tooltip: 'View logs',
+              onPressed: () => showLogViewer(context, filter: const ['[ProfileService]', '[AuthService]']),
+            ),
+            if (_loading || _saving)
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 16),
+                child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)),
+              )
+            else if (!_editing)
+              IconButton(
+                icon: const Icon(Icons.edit_outlined),
+                tooltip: 'Edit profile',
+                onPressed: _errorMessage == null ? _startEditing : null,
+              )
+            else ...[
+              TextButton(onPressed: _cancelEditing, child: const Text('Cancel')),
+              FilledButton(onPressed: _saveChanges, child: const Text('Save')),
+              const SizedBox(width: 8),
+            ],
           ],
-        ],
-      ),
-      body: SafeArea(
-        child: _loading
-            ? const Center(child: CircularProgressIndicator())
-            : _errorMessage != null
-                ? _ErrorView(message: _errorMessage!, onRetry: _fetchProfile)
-                : Column(
-                    children: [
-                      Expanded(
-                        child: SingleChildScrollView(
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-                    child: Form(
-                      key: _formKey,
-                      child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        _AvatarWithUpload(
-                          initials: _initials,
-                          avatarUrl: _profile?.avatarUrl,
-                          theme: theme,
-                          editing: _editing,
-                          uploading: _uploadingAvatar,
-                          onUpload: _pickAndUploadAvatar,
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          '@${widget.username}',
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                        if (!_editing && _profile != null) ...[
-                          const SizedBox(height: 16),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              _StatChip(
-                                label: 'Spots',
-                                count: _profile!.spotCount,
-                                theme: theme,
+        ),
+        body: SafeArea(
+          child: _loading
+              ? const Center(child: CircularProgressIndicator())
+              : _errorMessage != null
+                  ? _ErrorView(message: _errorMessage!, onRetry: _fetchProfile)
+                  : SingleChildScrollView(
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+                      child: Form(
+                        key: _formKey,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            _AvatarWithUpload(
+                              initials: _initials,
+                              avatarUrl: _profile?.avatarUrl,
+                              theme: theme,
+                              editing: _editing,
+                              uploading: _uploadingAvatar,
+                              onUpload: _pickAndUploadAvatar,
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              '@${widget.username}',
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                color: theme.colorScheme.onSurfaceVariant,
                               ),
-                              const SizedBox(width: 24),
-                              _StatChip(
-                                label: 'Media',
-                                count: _profile!.mediaCount,
-                                theme: theme,
-                              ),
-                              const SizedBox(width: 24),
-                              _StatChip(
-                                label: 'Followers',
-                                count: _profile!.followerCount,
-                                theme: theme,
-                              ),
-                              const SizedBox(width: 24),
-                              _StatChip(
-                                label: 'Following',
-                                count: _profile!.followingCount,
-                                theme: theme,
+                            ),
+                            if (!_editing && _profile != null) ...[
+                              const SizedBox(height: 16),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  _StatChip(label: 'Spots', count: _profile!.spotCount, theme: theme),
+                                  const SizedBox(width: 24),
+                                  _StatChip(label: 'Media', count: _profile!.mediaCount, theme: theme),
+                                  const SizedBox(width: 24),
+                                  _StatChip(label: 'Followers', count: _profile!.followerCount, theme: theme),
+                                  const SizedBox(width: 24),
+                                  _StatChip(label: 'Following', count: _profile!.followingCount, theme: theme),
+                                ],
                               ),
                             ],
-                          ),
-                        ],
-                        const SizedBox(height: 32),
-                        _ProfileField(
-                          label: 'Display name',
-                          controller: _displayNameCtrl,
-                          editing: _editing,
-                          hint: 'Your full name',
-                          icon: Icons.person_outline,
+                            const SizedBox(height: 32),
+
+                            _SectionHeader(label: 'Personal', theme: theme),
+                            const SizedBox(height: 12),
+                            _ProfileField(
+                              label: 'Display name',
+                              controller: _displayNameCtrl,
+                              editing: _editing,
+                              hint: 'Your full name',
+                              icon: Icons.person_outline,
+                            ),
+                            const SizedBox(height: 12),
+                            _ProfileField(
+                              label: 'Bio',
+                              controller: _bioCtrl,
+                              editing: _editing,
+                              hint: 'Tell the community about yourself',
+                              icon: Icons.info_outline,
+                              maxLines: 3,
+                            ),
+                            const SizedBox(height: 12),
+                            _ProfileField(
+                              label: 'Birth year',
+                              controller: _bornyearCtrl,
+                              editing: _editing,
+                              hint: '1990',
+                              icon: Icons.cake_outlined,
+                              keyboardType: TextInputType.number,
+                              validator: (v) {
+                                if (v == null || v.isEmpty) return null;
+                                final y = int.tryParse(v);
+                                if (y == null || y < 1900 || y > 2099) return 'Enter a valid year';
+                                return null;
+                              },
+                            ),
+                            const SizedBox(height: 12),
+                            if (_editing)
+                              DropdownButtonFormField<int>(
+                                value: _genderValue,
+                                decoration: const InputDecoration(
+                                  labelText: 'Gender',
+                                  prefixIcon: Icon(Icons.wc_outlined),
+                                  border: OutlineInputBorder(),
+                                ),
+                                items: _genderOptions
+                                    .map((o) => DropdownMenuItem(value: o.value, child: Text(o.label)))
+                                    .toList(),
+                                onChanged: (v) => setState(() => _genderValue = v),
+                              )
+                            else
+                              _ReadOnlyField(
+                                label: 'Gender',
+                                value: _genderLabel(_profile?.gender),
+                                icon: Icons.wc_outlined,
+                                theme: theme,
+                              ),
+
+                            const SizedBox(height: 24),
+                            _SectionHeader(label: 'Contact', theme: theme),
+                            const SizedBox(height: 12),
+                            _ProfileField(
+                              label: 'Email',
+                              controller: _emailCtrl,
+                              editing: _editing,
+                              hint: 'your@email.com',
+                              icon: Icons.email_outlined,
+                              keyboardType: TextInputType.emailAddress,
+                              validator: (v) {
+                                if (v == null || v.isEmpty) return null;
+                                if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(v)) return 'Enter a valid email';
+                                return null;
+                              },
+                            ),
+                            const SizedBox(height: 12),
+                            _ProfileField(
+                              label: 'Phone',
+                              controller: _telephoneCtrl,
+                              editing: _editing,
+                              hint: '+358 40 123 4567',
+                              icon: Icons.phone_outlined,
+                              keyboardType: TextInputType.phone,
+                            ),
+                            const SizedBox(height: 12),
+                            _ProfileField(
+                              label: 'Location',
+                              controller: _locationCtrl,
+                              editing: _editing,
+                              hint: 'City or region',
+                              icon: Icons.location_on_outlined,
+                            ),
+                            const SizedBox(height: 12),
+                            _ProfileField(
+                              label: 'Address',
+                              controller: _addressCtrl,
+                              editing: _editing,
+                              hint: 'Street address',
+                              icon: Icons.home_outlined,
+                            ),
+                            const SizedBox(height: 12),
+                            _ProfileField(
+                              label: 'Postal code',
+                              controller: _postnumberCtrl,
+                              editing: _editing,
+                              hint: '00100',
+                              icon: Icons.markunread_mailbox_outlined,
+                              keyboardType: TextInputType.number,
+                            ),
+
+                            const SizedBox(height: 24),
+                            _SectionHeader(label: 'Online', theme: theme),
+                            const SizedBox(height: 12),
+                            _ProfileField(
+                              label: 'Website',
+                              controller: _websiteCtrl,
+                              editing: _editing,
+                              hint: 'https://example.com',
+                              icon: Icons.link_outlined,
+                              keyboardType: TextInputType.url,
+                              validator: (v) {
+                                if (v == null || v.isEmpty) return null;
+                                if (!RegExp(r'^https?://').hasMatch(v)) return 'Must start with https://';
+                                return null;
+                              },
+                            ),
+                            const SizedBox(height: 12),
+                            _ProfileField(
+                              label: 'YouTube',
+                              controller: _youtubeCtrl,
+                              editing: _editing,
+                              hint: 'https://youtube.com/@yourchannel',
+                              icon: Icons.smart_display_outlined,
+                              keyboardType: TextInputType.url,
+                            ),
+                            const SizedBox(height: 12),
+                            _ProfileField(
+                              label: 'Hobbies',
+                              controller: _hobbiesCtrl,
+                              editing: _editing,
+                              hint: 'Hiking, photography, cycling…',
+                              icon: Icons.interests_outlined,
+                              maxLines: 3,
+                            ),
+                            const SizedBox(height: 32),
+                          ],
                         ),
-                        const SizedBox(height: 16),
-                        _ProfileField(
-                          label: 'Bio',
-                          controller: _bioCtrl,
-                          editing: _editing,
-                          hint: 'Tell the community about yourself',
-                          icon: Icons.info_outline,
-                          maxLines: 3,
-                        ),
-                        const SizedBox(height: 16),
-                        _ProfileField(
-                          label: 'Email',
-                          controller: _emailCtrl,
-                          editing: _editing,
-                          hint: 'your@email.com',
-                          icon: Icons.email_outlined,
-                          keyboardType: TextInputType.emailAddress,
-                          validator: (v) {
-                            if (v == null || v.isEmpty) return null;
-                            if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(v)) return 'Enter a valid email';
-                            return null;
-                          },
-                        ),
-                        const SizedBox(height: 16),
-                        _ProfileField(
-                          label: 'Website',
-                          controller: _websiteCtrl,
-                          editing: _editing,
-                          hint: 'https://example.com',
-                          icon: Icons.link_outlined,
-                          keyboardType: TextInputType.url,
-                          validator: (v) {
-                            if (v == null || v.isEmpty) return null;
-                            if (!RegExp(r'^https?://').hasMatch(v)) return 'Must start with https://';
-                            return null;
-                          },
-                        ),
-                      ],
-                    ),
-                    ),
-                  ),
                       ),
-                    ],
-                  ),
+                    ),
+        ),
       ),
+    );
+  }
+}
+
+class _SectionHeader extends StatelessWidget {
+  final String label;
+  final ThemeData theme;
+
+  const _SectionHeader({required this.label, required this.theme});
+
+  @override
+  Widget build(BuildContext context) {
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Text(
+        label.toUpperCase(),
+        style: theme.textTheme.labelSmall?.copyWith(
+          color: theme.colorScheme.primary,
+          fontWeight: FontWeight.bold,
+          letterSpacing: 1.2,
+        ),
       ),
     );
   }
@@ -433,6 +580,49 @@ class _StatChip extends StatelessWidget {
   }
 }
 
+class _ReadOnlyField extends StatelessWidget {
+  final String label;
+  final String value;
+  final IconData icon;
+  final ThemeData theme;
+
+  const _ReadOnlyField({required this.label, required this.value, required this.icon, required this.theme});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, size: 20, color: theme.colorScheme.onSurfaceVariant),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(label, style: theme.textTheme.labelSmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+                const SizedBox(height: 2),
+                Text(
+                  value,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: value == '—' ? theme.colorScheme.onSurfaceVariant : theme.colorScheme.onSurface,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _ProfileField extends StatelessWidget {
   final String label;
   final TextEditingController controller;
@@ -492,17 +682,13 @@ class _ProfileField extends StatelessWidget {
               children: [
                 Text(
                   label,
-                  style: theme.textTheme.labelSmall?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
+                  style: theme.textTheme.labelSmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
                 ),
                 const SizedBox(height: 2),
                 Text(
                   value.isNotEmpty ? value : '—',
                   style: theme.textTheme.bodyMedium?.copyWith(
-                    color: value.isNotEmpty
-                        ? theme.colorScheme.onSurface
-                        : theme.colorScheme.onSurfaceVariant,
+                    color: value.isNotEmpty ? theme.colorScheme.onSurface : theme.colorScheme.onSurfaceVariant,
                   ),
                 ),
               ],

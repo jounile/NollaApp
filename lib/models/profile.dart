@@ -9,6 +9,14 @@ class Profile {
   final int followingCount;
   final int spotCount;
   final int mediaCount;
+  final String location;
+  final String address;
+  final String postnumber;
+  final String telephone;
+  final String hobbies;
+  final String youtube;
+  final int? bornyear;
+  final int? gender;
 
   const Profile({
     required this.username,
@@ -21,16 +29,24 @@ class Profile {
     this.followingCount = 0,
     this.spotCount = 0,
     this.mediaCount = 0,
+    this.location = '',
+    this.address = '',
+    this.postnumber = '',
+    this.telephone = '',
+    this.hobbies = '',
+    this.youtube = '',
+    this.bornyear,
+    this.gender,
   });
 
   factory Profile.fromJson(Map<String, dynamic> json) {
     return Profile(
-      username: (json['username'] ?? json['user'] ?? '').toString(),
-      displayName: (json['display_name'] ?? json['displayName'] ?? json['name'] ?? json['full_name'] ?? '').toString(),
-      bio: (json['bio'] ?? json['description'] ?? json['about'] ?? '').toString(),
+      username: (json['username'] ?? '').toString(),
+      displayName: (json['name'] ?? json['display_name'] ?? json['displayName'] ?? '').toString(),
+      bio: (json['info'] ?? json['bio'] ?? json['description'] ?? '').toString(),
       email: (json['email'] ?? '').toString(),
-      website: (json['website'] ?? json['url'] ?? json['web'] ?? '').toString(),
-      avatarUrl: (json['avatar_url'] ?? json['avatarUrl'] ?? json['avatar'] ?? json['profile_picture']) as String?,
+      website: (json['homepage'] ?? json['website'] ?? json['url'] ?? '').toString(),
+      avatarUrl: _nullableString(json['avatar'] ?? json['avatar_url'] ?? json['avatarUrl']),
       followerCount: (json['follower_count'] as num?)?.toInt() ??
           (json['followers_count'] as num?)?.toInt() ??
           (json['followers'] as num?)?.toInt() ??
@@ -40,20 +56,40 @@ class Profile {
           0,
       spotCount: (json['spot_count'] as num?)?.toInt() ??
           (json['spots_count'] as num?)?.toInt() ??
-          (json['spots'] as num?)?.toInt() ??
           0,
       mediaCount: (json['media_count'] as num?)?.toInt() ??
           (json['photos_count'] as num?)?.toInt() ??
-          (json['media'] as num?)?.toInt() ??
           0,
+      location: (json['location'] ?? '').toString(),
+      address: (json['address'] ?? '').toString(),
+      postnumber: (json['postnumber'] ?? '').toString(),
+      telephone: (json['telephone'] ?? '').toString(),
+      hobbies: (json['hobbies'] ?? '').toString(),
+      youtube: (json['youtube'] ?? '').toString(),
+      bornyear: (json['bornyear'] as num?)?.toInt(),
+      gender: (json['gender'] as num?)?.toInt(),
     );
   }
 
+  static String? _nullableString(dynamic v) {
+    if (v == null) return null;
+    final s = v.toString();
+    return s.isEmpty ? null : s;
+  }
+
   Map<String, dynamic> toJson() => {
-    'display_name': displayName,
-    'bio': bio,
+    'name': displayName,
+    'info': bio,
     'email': email,
-    'website': website,
+    'homepage': website,
+    'location': location,
+    'address': address,
+    'postnumber': postnumber,
+    'telephone': telephone,
+    'hobbies': hobbies,
+    'youtube': youtube,
+    if (bornyear != null) 'bornyear': bornyear,
+    if (gender != null) 'gender': gender,
   };
 
   Profile copyWith({
@@ -62,6 +98,14 @@ class Profile {
     String? email,
     String? website,
     String? avatarUrl,
+    String? location,
+    String? address,
+    String? postnumber,
+    String? telephone,
+    String? hobbies,
+    String? youtube,
+    int? bornyear,
+    int? gender,
   }) => Profile(
     username: username,
     displayName: displayName ?? this.displayName,
@@ -73,5 +117,13 @@ class Profile {
     followingCount: followingCount,
     spotCount: spotCount,
     mediaCount: mediaCount,
+    location: location ?? this.location,
+    address: address ?? this.address,
+    postnumber: postnumber ?? this.postnumber,
+    telephone: telephone ?? this.telephone,
+    hobbies: hobbies ?? this.hobbies,
+    youtube: youtube ?? this.youtube,
+    bornyear: bornyear ?? this.bornyear,
+    gender: gender ?? this.gender,
   );
 }

@@ -77,50 +77,36 @@ class ProfileService {
   }
 
   static Future<ProfileResult> updateProfile(String authToken, Profile profile) async {
-    final body = jsonEncode(profile.toJson());
-    final headers = _jsonHeaders(authToken);
-    final uri = Uri.parse(_profileUrl);
+    try {
+      AppLogger.log('[ProfileService] POST $_profileUrl');
+      final response = await appHttpClient
+          .post(
+            Uri.parse(_profileUrl),
+            headers: _jsonHeaders(authToken),
+            body: jsonEncode(profile.toJson()),
+          )
+          .timeout(const Duration(seconds: 10));
+      AppLogger.log('[ProfileService] status=${response.statusCode} body=${response.body}');
 
-    for (final method in ['PATCH', 'POST', 'PUT']) {
-      try {
-        AppLogger.log('[ProfileService] $method $_profileUrl');
-        final http.Response response;
-        switch (method) {
-          case 'PATCH':
-            response = await appHttpClient.patch(uri, headers: headers, body: body).timeout(const Duration(seconds: 10));
-          case 'POST':
-            response = await appHttpClient.post(uri, headers: headers, body: body).timeout(const Duration(seconds: 10));
-          default:
-            response = await appHttpClient.put(uri, headers: headers, body: body).timeout(const Duration(seconds: 10));
+      if (response.statusCode == 200 || response.statusCode == 204) {
+        if (response.body.isNotEmpty) {
+          try {
+            final parsed = jsonDecode(response.body);
+            if (parsed is Map<String, dynamic>) {
+              return ProfileResult(success: true, profile: Profile.fromJson(parsed));
+            }
+          } catch (_) {}
         }
-        AppLogger.log('[ProfileService] $method status=${response.statusCode} body=${response.body}');
-
-        if (response.statusCode == 405) {
-          AppLogger.log('[ProfileService] $method not allowed, trying next method');
-          continue;
-        }
-        if (response.statusCode == 200 || response.statusCode == 204) {
-          if (response.body.isNotEmpty) {
-            try {
-              final parsed = jsonDecode(response.body);
-              if (parsed is Map<String, dynamic>) {
-                final data = (parsed['profile'] ?? parsed['user'] ?? parsed['data'] ?? parsed) as Map<String, dynamic>;
-                return ProfileResult(success: true, profile: Profile.fromJson(data));
-              }
-            } catch (_) {}
-          }
-          return ProfileResult(success: true, profile: profile);
-        } else if (response.statusCode == 401) {
-          return const ProfileResult(success: false, message: 'Session expired — please log in again');
-        } else {
-          return ProfileResult(success: false, message: 'Failed to save profile ($method ${response.statusCode})');
-        }
-      } catch (e) {
-        AppLogger.log('[ProfileService] $method exception: $e');
-        return const ProfileResult(success: false, message: 'Network error. Please check your connection.');
+        return ProfileResult(success: true, profile: profile);
+      } else if (response.statusCode == 401) {
+        return const ProfileResult(success: false, message: 'Session expired — please log in again');
+      } else {
+        return ProfileResult(success: false, message: 'Failed to save profile (${response.statusCode})');
       }
+    } catch (e) {
+      AppLogger.log('[ProfileService] exception: $e');
+      return const ProfileResult(success: false, message: 'Network error. Please check your connection.');
     }
-    return const ProfileResult(success: false, message: 'Save failed: no supported HTTP method accepted by API');
   }
 
   static Future<ProfileResult> uploadAvatar(String authToken, String filePath) async {
