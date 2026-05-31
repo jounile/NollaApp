@@ -12,7 +12,7 @@ class AuthResult {
 }
 
 class AuthService {
-  static const String _loginUrl = 'https://nolla.net/auth/api/login';
+  static const String _loginUrl = 'https://nolla.net/api/v1/auth/login';
 
   Future<AuthResult> login(String username, String password) async {
     try {
