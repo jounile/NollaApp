@@ -62,7 +62,6 @@ class FeedService {
         final items = <MediaItem>[];
         for (final e in list) {
           try {
-            if ((e['mediatype_id'] as num?)?.toInt() == 5) continue;
             final item = MediaItem.fromJson(e as Map<String, dynamic>);
             AppLogger.log('[FeedService] item id=${item.id} type=${item.mediaType} rawType=${e['media_type'] ?? e['type'] ?? e['mediatype_id']} url=${item.url} viewUrl=${item.viewUrl} thumb=${item.thumbnailUrl}');
             items.add(item);
