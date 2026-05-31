@@ -35,6 +35,12 @@ class MediaItem {
     return 'https://nolla.net/media/photos/${id}_400.jpg';
   }
 
+  String get feedUrl {
+    if (id == 0) return thumbnailUrl ?? url;
+    if (mediaType == 'video') return thumbnailUrl ?? url;
+    return 'https://nolla.net/media/photos/${id}_400.jpg';
+  }
+
   MediaItem copyWith({bool? isLikedByMe, int? likeCount, int? commentCount}) => MediaItem(
         id: id,
         url: url,

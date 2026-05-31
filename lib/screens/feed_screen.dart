@@ -282,7 +282,7 @@ class _MediaCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final displayUrl = item.thumbnailUrl ?? item.url;
+    final displayUrl = item.feedUrl;
     final hasLongDescription = item.description != null && item.description!.isNotEmpty;
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -298,6 +298,7 @@ class _MediaCard extends StatelessWidget {
                 child: Image.network(
                   displayUrl,
                   fit: BoxFit.cover,
+                  filterQuality: FilterQuality.medium,
                   loadingBuilder: (ctx, child, progress) => progress == null
                       ? child
                       : Container(
