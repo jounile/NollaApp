@@ -32,9 +32,14 @@ class ProfileService {
   static const String _profileUrl = 'https://nolla.net/api/v1/user';
 
   static Map<String, String> _headers(String authToken) => {
+    'Accept': 'application/json',
+    if (authToken.isNotEmpty) 'Authorization': 'Bearer $authToken',
+  };
+
+  static Map<String, String> _jsonHeaders(String authToken) => {
     'Content-Type': 'application/json',
     'Accept': 'application/json',
-    'Authorization': 'Bearer $authToken',
+    if (authToken.isNotEmpty) 'Authorization': 'Bearer $authToken',
   };
 
   static Future<ProfileResult> fetchProfile(String authToken) async {
@@ -73,7 +78,7 @@ class ProfileService {
       final response = await appHttpClient
           .put(
             Uri.parse(_profileUrl),
-            headers: _headers(authToken),
+            headers: _jsonHeaders(authToken),
             body: jsonEncode(profile.toJson()),
           )
           .timeout(const Duration(seconds: 10));

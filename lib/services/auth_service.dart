@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
-import 'package:http/http.dart' as http;
+import 'app_http_client.dart';
+import 'app_logger.dart';
 
 class AuthResult {
   final bool success;
@@ -15,17 +16,22 @@ class AuthService {
 
   Future<AuthResult> login(String username, String password) async {
     try {
-      final response = await http.post(
-        Uri.parse(_loginUrl),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'username': username, 'password': password}),
-      ).timeout(const Duration(seconds: 15));
+      final response = await appHttpClient
+          .post(
+            Uri.parse(_loginUrl),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({'username': username, 'password': password}),
+          )
+          .timeout(const Duration(seconds: 15));
+
+      AppLogger.log('[AuthService] status=${response.statusCode} body=${response.body}');
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body) as Map<String, dynamic>;
         final message = data['message'] as String? ?? 'Login successful';
         final rawToken = data['token'] ?? data['access_token'] ?? data['jwt'] ?? data['auth_token'] ?? data['key'];
         final token = rawToken is String ? rawToken : null;
+        AppLogger.log('[AuthService] token=${token != null ? "present (${token.length} chars)" : "null — will rely on session cookie"}');
         return AuthResult(success: true, message: message, token: token);
       } else {
         final data = jsonDecode(response.body) as Map<String, dynamic>? ?? {};
@@ -33,6 +39,7 @@ class AuthService {
         return AuthResult(success: false, message: message);
       }
     } catch (e) {
+      AppLogger.log('[AuthService] exception: $e');
       final isCors = kIsWeb && (e.toString().contains('XMLHttpRequest') || e.toString().contains('Load failed'));
       return AuthResult(
         success: false,
