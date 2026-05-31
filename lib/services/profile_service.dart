@@ -5,6 +5,7 @@ import '../models/profile.dart';
 import '../models/public_profile.dart';
 import '../models/media_item.dart';
 import '../models/spot.dart';
+import 'app_http_client.dart';
 import 'app_logger.dart';
 
 class ProfileResult {
@@ -39,7 +40,7 @@ class ProfileService {
   static Future<ProfileResult> fetchProfile(String authToken) async {
     try {
       AppLogger.log('[ProfileService] GET $_profileUrl');
-      final response = await http
+      final response = await appHttpClient
           .get(Uri.parse(_profileUrl), headers: _headers(authToken))
           .timeout(const Duration(seconds: 10));
       AppLogger.log('[ProfileService] status=${response.statusCode} body=${response.body}');
@@ -69,7 +70,7 @@ class ProfileService {
   static Future<ProfileResult> updateProfile(String authToken, Profile profile) async {
     try {
       AppLogger.log('[ProfileService] PUT $_profileUrl');
-      final response = await http
+      final response = await appHttpClient
           .put(
             Uri.parse(_profileUrl),
             headers: _headers(authToken),
@@ -118,7 +119,7 @@ class ProfileService {
           contentType: MediaType.parse(mimeType),
         ),
       );
-      final streamed = await request.send().timeout(const Duration(minutes: 2));
+      final streamed = await appHttpClient.send(request).timeout(const Duration(minutes: 2));
       final response = await http.Response.fromStream(streamed);
       AppLogger.log('[ProfileService] avatar upload status=${response.statusCode}');
       if (response.statusCode == 200 || response.statusCode == 201) {
@@ -144,7 +145,7 @@ class ProfileService {
     try {
       final uri = Uri.parse('https://nolla.net/api/v1/users/$username');
       AppLogger.log('[ProfileService] GET $uri');
-      final response = await http.get(uri, headers: _headers(authToken)).timeout(const Duration(seconds: 10));
+      final response = await appHttpClient.get(uri, headers: _headers(authToken)).timeout(const Duration(seconds: 10));
       if (response.statusCode == 200) {
         final body = jsonDecode(response.body);
         final Map<String, dynamic> data;
@@ -165,7 +166,7 @@ class ProfileService {
   static Future<List<Spot>> fetchUserSpots(String username, String authToken) async {
     try {
       final uri = Uri.parse('https://nolla.net/api/v1/users/$username/spots');
-      final response = await http.get(uri, headers: _headers(authToken)).timeout(const Duration(seconds: 10));
+      final response = await appHttpClient.get(uri, headers: _headers(authToken)).timeout(const Duration(seconds: 10));
       if (response.statusCode == 200) {
         final body = jsonDecode(response.body);
         final List<dynamic> list;
@@ -195,7 +196,7 @@ class ProfileService {
   static Future<List<MediaItem>> fetchUserMedia(String username, String authToken) async {
     try {
       final uri = Uri.parse('https://nolla.net/api/v1/users/$username/media');
-      final response = await http.get(uri, headers: _headers(authToken)).timeout(const Duration(seconds: 10));
+      final response = await appHttpClient.get(uri, headers: _headers(authToken)).timeout(const Duration(seconds: 10));
       if (response.statusCode == 200) {
         final body = jsonDecode(response.body);
         final List<dynamic> list;
