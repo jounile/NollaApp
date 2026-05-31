@@ -290,7 +290,7 @@ class _MediaCard extends StatelessWidget {
         children: [
           if (displayUrl.isNotEmpty)
             GestureDetector(
-              onTap: () => _openMediaView(context, item),
+              onTap: () => _openMediaView(context, item, authToken),
               child: AspectRatio(
                 aspectRatio: 16 / 9,
                 child: Image.network(
@@ -446,11 +446,11 @@ class _MediaCard extends StatelessWidget {
   }
 }
 
-void _openMediaView(BuildContext context, MediaItem item) {
+void _openMediaView(BuildContext context, MediaItem item, String authToken) {
   if (item.mediaType == 'video') {
     Navigator.of(context).push<void>(MaterialPageRoute(
       fullscreenDialog: true,
-      builder: (_) => _VideoPlayerView(url: item.viewUrl),
+      builder: (_) => _VideoPlayerView(url: item.viewUrl, authToken: authToken),
     ));
   } else {
     showDialog<void>(
@@ -489,7 +489,8 @@ void _openMediaView(BuildContext context, MediaItem item) {
 
 class _VideoPlayerView extends StatefulWidget {
   final String url;
-  const _VideoPlayerView({required this.url});
+  final String authToken;
+  const _VideoPlayerView({required this.url, required this.authToken});
 
   @override
   State<_VideoPlayerView> createState() => _VideoPlayerViewState();
@@ -502,7 +503,10 @@ class _VideoPlayerViewState extends State<_VideoPlayerView> {
   @override
   void initState() {
     super.initState();
-    _controller = VideoPlayerController.networkUrl(Uri.parse(widget.url))
+    _controller = VideoPlayerController.networkUrl(
+      Uri.parse(widget.url),
+      httpHeaders: {'Authorization': 'Bearer ${widget.authToken}'},
+    )
       ..initialize().then((_) {
         if (!mounted) return;
         setState(() => _initialized = true);
