@@ -124,9 +124,9 @@ const List<Article> mockArticles = [
 ];
 
 const List<Spot> mockSpots = [
-  Spot(id: 1, name: 'Helsinki Skatepark', latitude: 60.1856, longitude: 24.9523, type: 'park', distance: 800),
-  Spot(id: 2, name: 'Kallio Bowl', latitude: 60.1822, longitude: 24.9507, type: 'park', distance: 1200),
-  Spot(id: 3, name: 'Kamppi Rails', latitude: 60.1692, longitude: 24.9327, type: 'terrain', distance: 400),
-  Spot(id: 4, name: 'Töölö Plaza', latitude: 60.1752, longitude: 24.9240, type: 'terrain', distance: 650),
-  Spot(id: 5, name: 'Eira Canal Banks', latitude: 60.1605, longitude: 24.9412, type: 'water', distance: 2100),
+  Spot(id: 1, name: 'Helsinki Skatepark', latitude: 60.1856, longitude: 24.9523, type: 'skatepark', distance: 800),
+  Spot(id: 2, name: 'Kallio Bowl', latitude: 60.1822, longitude: 24.9507, type: 'bowl', distance: 1200),
+  Spot(id: 3, name: 'Kamppi Rails', latitude: 60.1692, longitude: 24.9327, type: 'rail', distance: 400),
+  Spot(id: 4, name: 'Töölö Plaza', latitude: 60.1752, longitude: 24.9240, type: 'street', distance: 650),
+  Spot(id: 5, name: 'Eira Canal Banks', latitude: 60.1605, longitude: 24.9412, type: 'bank', distance: 2100),
 ];
