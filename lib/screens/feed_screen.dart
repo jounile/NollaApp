@@ -424,6 +424,19 @@ class _MediaCard extends StatelessWidget {
                   ),
                 ),
               ),
+            )
+          else if (item.mediaType == 'video')
+            GestureDetector(
+              onTap: () => _openMediaView(context, item, authToken),
+              child: AspectRatio(
+                aspectRatio: 16 / 9,
+                child: Container(
+                  color: theme.colorScheme.surfaceContainerHighest,
+                  child: Center(
+                    child: Icon(Icons.videocam_outlined, size: 48, color: theme.colorScheme.onSurfaceVariant),
+                  ),
+                ),
+              ),
             ),
           Padding(
             padding: const EdgeInsets.fromLTRB(12, 12, 12, 4),

@@ -39,7 +39,7 @@ class MediaItem {
 
   String get feedUrl {
     if (id == 0) return thumbnailUrl ?? url;
-    if (mediaType == 'video') return thumbnailUrl ?? url;
+    if (mediaType == 'video') return thumbnailUrl ?? '';
     return 'https://nolla.net/media/photos/${id}_400.jpg';
   }
 

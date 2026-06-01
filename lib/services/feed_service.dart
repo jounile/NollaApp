@@ -64,10 +64,6 @@ class FeedService {
           try {
             final item = MediaItem.fromJson(e as Map<String, dynamic>);
             AppLogger.log('[FeedService] item id=${item.id} type=${item.mediaType} rawType=${e['media_type'] ?? e['type'] ?? e['mediatype_id']} url=${item.url} viewUrl=${item.viewUrl} thumb=${item.thumbnailUrl}');
-            if (item.mediaType == 'video' && item.thumbnailUrl == null) {
-              AppLogger.log('[FeedService] skipped video without thumbnail: id=${item.id}');
-              continue;
-            }
             items.add(item);
           } catch (err) {
             AppLogger.log('[FeedService] skipped item: $err');
@@ -109,9 +105,7 @@ class FeedService {
         final items = <MediaItem>[];
         for (final e in list) {
           try {
-            final item = MediaItem.fromJson(e as Map<String, dynamic>);
-            if (item.mediaType == 'video' && item.thumbnailUrl == null) continue;
-            items.add(item);
+            items.add(MediaItem.fromJson(e as Map<String, dynamic>));
           } catch (_) {}
         }
         return FeedResult(success: true, items: items);
