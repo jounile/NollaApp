@@ -523,10 +523,8 @@ class _MediaCard extends StatelessWidget {
                     child: Row(
                       children: [
                         Icon(Icons.comment_outlined, size: 20, color: theme.colorScheme.onSurfaceVariant),
-                        if (item.commentCount > 0) ...[
-                          const SizedBox(width: 4),
-                          Text('${item.commentCount}', style: theme.textTheme.bodySmall),
-                        ],
+                        const SizedBox(width: 4),
+                        Text('${item.commentCount}', style: theme.textTheme.bodySmall),
                       ],
                     ),
                   ),

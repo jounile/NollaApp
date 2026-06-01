@@ -6,6 +6,7 @@ class Article {
   final String? excerpt;
   final String? publishedAt;
   final String? articleUrl;
+  final int commentCount;
 
   const Article({
     required this.id,
@@ -15,6 +16,7 @@ class Article {
     this.excerpt,
     this.publishedAt,
     this.articleUrl,
+    this.commentCount = 0,
   });
 
   factory Article.fromJson(Map<String, dynamic> json) {
@@ -47,6 +49,7 @@ class Article {
           json['publishedAt'] as String? ??
           json['created_at'] as String?,
       articleUrl: json['url'] as String? ?? json['link'] as String? ?? json['article_url'] as String?,
+      commentCount: (json['comment_count'] as num?)?.toInt() ?? (json['comments'] as num?)?.toInt() ?? 0,
     );
   }
 }

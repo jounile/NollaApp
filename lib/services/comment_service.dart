@@ -3,6 +3,8 @@ import 'package:http/http.dart' as http;
 import '../models/comment.dart';
 import 'app_logger.dart';
 
+enum CommentContentType { media, article }
+
 class CommentsResult {
   final bool success;
   final String? message;
@@ -12,15 +14,24 @@ class CommentsResult {
 }
 
 class CommentService {
+  static String _endpoint(int contentId, CommentContentType type) {
+    final segment = type == CommentContentType.article ? 'articles' : 'media';
+    return 'https://nolla.net/api/v1/$segment/$contentId/comments';
+  }
+
   static Map<String, String> _headers(String authToken) => {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
         'Authorization': 'Bearer $authToken',
       };
 
-  static Future<CommentsResult> fetchComments(int mediaId, String authToken) async {
+  static Future<CommentsResult> fetchComments(
+    int contentId,
+    String authToken, {
+    CommentContentType type = CommentContentType.media,
+  }) async {
     try {
-      final uri = Uri.parse('https://nolla.net/api/v1/media/$mediaId/comments');
+      final uri = Uri.parse(_endpoint(contentId, type));
       AppLogger.log('[CommentService] GET $uri');
       final response = await http.get(uri, headers: _headers(authToken)).timeout(const Duration(seconds: 10));
       AppLogger.log('[CommentService] fetchComments status=${response.statusCode} body=${response.body}');
@@ -52,7 +63,8 @@ class CommentService {
         final comments = <Comment>[];
         for (final e in list) {
           try {
-            comments.add(Comment.fromJson(e as Map<String, dynamic>));
+            final comment = Comment.fromJson(e as Map<String, dynamic>);
+            if (comment.published) comments.add(comment);
           } catch (_) {}
         }
         return CommentsResult(success: true, comments: comments);
@@ -67,9 +79,14 @@ class CommentService {
     }
   }
 
-  static Future<Comment?> addComment(int mediaId, String body, String authToken) async {
+  static Future<Comment?> addComment(
+    int contentId,
+    String body,
+    String authToken, {
+    CommentContentType type = CommentContentType.media,
+  }) async {
     try {
-      final uri = Uri.parse('https://nolla.net/api/v1/media/$mediaId/comments');
+      final uri = Uri.parse(_endpoint(contentId, type));
       AppLogger.log('[CommentService] POST $uri');
       final response = await http
           .post(
