@@ -100,12 +100,19 @@ class MediaItem {
             : _inferTypeFromUrl(url);
     final thumbDir = mediaType == 'video' ? 'mp4-thumbs' : 'photos-thumbs';
 
+    // If the API explicitly returns thumbnail_url (even if null), respect it.
+    // Only auto-generate a URL when the field is completely absent from the response.
+    final hasThumbnailKey = json.containsKey('thumbnail_url');
+    final apiThumbnail = hasThumbnailKey ? json['thumbnail_url'] as String? : null;
+    final resolvedThumbnail = hasThumbnailKey
+        ? apiThumbnail // trust the API (null means no thumbnail)
+        : json['thumbnail'] as String? ?? // legacy: try 'thumbnail' key
+            (id != 0 ? 'https://nolla.net/media/$thumbDir/${id}_100.jpg' : null);
+
     return MediaItem(
       id: id,
       url: url,
-      thumbnailUrl: json['thumbnail_url'] as String? ??
-          json['thumbnail'] as String? ??
-          (id != 0 ? 'https://nolla.net/media/$thumbDir/${id}_100.jpg' : null),
+      thumbnailUrl: resolvedThumbnail,
       mediaType: mediaType,
       mediatypeId: rawMediatypeId,
       uploaderUsername: uploaderUsername,
