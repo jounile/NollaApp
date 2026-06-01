@@ -22,6 +22,21 @@ class FeedResult {
 
 class FeedService {
   static const String _mediaUrl = 'https://nolla.net/api/v1/media';
+  static const Duration _headTimeout = Duration(seconds: 5);
+
+  static Future<bool> _videoExists(MediaItem item) async {
+    try {
+      final videoUrl = item.viewUrl;
+      AppLogger.log('[FeedService] HEAD $videoUrl');
+      final response = await appHttpClient.head(Uri.parse(videoUrl)).timeout(_headTimeout);
+      final exists = response.statusCode == 200;
+      AppLogger.log('[FeedService] video id=${item.id} exists=$exists status=${response.statusCode}');
+      return exists;
+    } catch (e) {
+      AppLogger.log('[FeedService] video id=${item.id} exists check failed: $e');
+      return false;
+    }
+  }
 
   static Map<String, String> _headers(String authToken) => {
         'Accept': 'application/json',
@@ -59,15 +74,44 @@ class FeedService {
         } else {
           return const FeedResult(success: true);
         }
-        final items = <MediaItem>[];
+        // Parse all items first
+        final parsed = <MediaItem>[];
         for (final e in list) {
           try {
-            final item = MediaItem.fromJson(e as Map<String, dynamic>);
-            AppLogger.log('[FeedService] item id=${item.id} type=${item.mediaType} rawType=${e['media_type'] ?? e['type'] ?? e['mediatype_id']} url=${item.url} viewUrl=${item.viewUrl} thumb=${item.thumbnailUrl}');
-            items.add(item);
+            parsed.add(MediaItem.fromJson(e as Map<String, dynamic>));
           } catch (err) {
             AppLogger.log('[FeedService] skipped item: $err');
           }
+        }
+
+        // Check video existence in parallel, then filter
+        final existenceFutures = <int, Future<bool>>{};
+        for (final item in parsed) {
+          if (item.mediaType == 'video') {
+            existenceFutures[item.id] = _videoExists(item);
+          }
+        }
+        final existenceResults = <int, bool>{};
+        if (existenceFutures.isNotEmpty) {
+          final ids = existenceFutures.keys.toList();
+          final futures = ids.map((id) => existenceFutures[id]!);
+          final results = await Future.wait(futures);
+          for (int i = 0; i < ids.length; i++) {
+            existenceResults[ids[i]] = results[i];
+          }
+        }
+
+        final items = <MediaItem>[];
+        for (final item in parsed) {
+          if (item.mediaType == 'video') {
+            final exists = existenceResults[item.id] ?? false;
+            if (!exists) {
+              AppLogger.log('[FeedService] skipped video without file: id=${item.id}');
+              continue;
+            }
+          }
+          items.add(item);
+          AppLogger.log('[FeedService] item id=${item.id} type=${item.mediaType} thumb=${item.thumbnailUrl}');
         }
         AppLogger.log('[FeedService] total=$total hasMore=$hasMore items=${items.length}');
         return FeedResult(success: true, items: items, hasMore: hasMore, total: total);
@@ -105,7 +149,9 @@ class FeedService {
         final items = <MediaItem>[];
         for (final e in list) {
           try {
-            items.add(MediaItem.fromJson(e as Map<String, dynamic>));
+            final item = MediaItem.fromJson(e as Map<String, dynamic>);
+            if (item.mediaType == 'video' && !await _videoExists(item)) continue;
+            items.add(item);
           } catch (_) {}
         }
         return FeedResult(success: true, items: items);
