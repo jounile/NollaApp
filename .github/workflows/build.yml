@@ -10,7 +10,7 @@ jobs:
   build-android:
     name: Build Android APK
     runs-on: ubuntu-latest
-    if: false  # disabled to save Actions quota; re-enable: github.event.action != 'closed'
+    if: github.event.action != 'closed'
     permissions:
       contents: write
       pull-requests: write
