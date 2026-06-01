@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 import '../models/media_item.dart';
 import '../services/app_logger.dart';
+import '../services/comment_service.dart';
 import '../services/feed_service.dart';
 import '../services/social_service.dart';
 import '../widgets/comments_sheet.dart';
@@ -57,6 +58,26 @@ class _FeedScreenState extends State<FeedScreen> {
         if (result.total != null) _serverTotal = result.total;
       } else {
         _error = result.message;
+      }
+    });
+    if (result.success) _prefetchCommentCounts(result.items);
+  }
+
+  Future<void> _prefetchCommentCounts(List<MediaItem> items) async {
+    final futures = items.map(
+      (item) => CommentService.fetchComments(item.id, widget.authToken),
+    );
+    final results = await Future.wait(futures);
+    if (!mounted) return;
+    setState(() {
+      for (int i = 0; i < items.length; i++) {
+        final r = results[i];
+        if (r.success && r.comments.isNotEmpty) {
+          final idx = _items.indexWhere((e) => e.id == items[i].id);
+          if (idx != -1) {
+            _items[idx] = _items[idx].copyWith(commentCount: r.comments.length);
+          }
+        }
       }
     });
   }
