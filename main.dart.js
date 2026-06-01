@@ -103518,9 +103518,9 @@ q=A.ff(new A.dm(new A.an(r,new A.aw4(),A.a3(r).i("an<1,l?>")),q),q.i("o.E"))
 s=A.a7(q,!0,A.k(q).c)
 B.b.j1(s)
 return s},
-ajG(a){switch(a){case 1:return"Photos (1)"
-case 5:return"Video (5)"
-case 6:return"Video (6)"
+ajG(a){switch(a){case 1:return"Photos"
+case 5:return"Video"
+case 6:return"Video"
 default:return"Type "+a}},
 AJ(){var s=0,r=A.C(t.H),q,p=this
 var $async$AJ=A.y(function(a,b){if(a===1)return A.z(b,r)
