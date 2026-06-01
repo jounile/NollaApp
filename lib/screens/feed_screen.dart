@@ -99,7 +99,7 @@ class _FeedScreenState extends State<FeedScreen> {
     return ids;
   }
 
-  bool get _hasOtherItems => _items.any((e) => e.mediatypeId == null);
+  bool get _hasOtherItems => _items.any((e) => e.mediatypeId == null || !_primaryMediatypeIds.contains(e.mediatypeId));
 
   int get _displayCount => _selectedMediatypeId == null
       ? _serverTotal ?? _items.length
@@ -220,14 +220,15 @@ class _FeedScreenState extends State<FeedScreen> {
                                 onSelected: (_) => setState(() => _selectedMediatypeId = id),
                               ),
                             )),
-                        Padding(
-                          padding: const EdgeInsets.only(right: 8),
-                          child: FilterChip(
-                            label: const Text('Other'),
-                            selected: _selectedMediatypeId == _otherFilterId,
-                            onSelected: (_) => setState(() => _selectedMediatypeId = _otherFilterId),
+                        if (_hasOtherItems)
+                          Padding(
+                            padding: const EdgeInsets.only(right: 8),
+                            child: FilterChip(
+                              label: const Text('Other'),
+                              selected: _selectedMediatypeId == _otherFilterId,
+                              onSelected: (_) => setState(() => _selectedMediatypeId = _otherFilterId),
+                            ),
                           ),
-                        ),
                       ],
                     ),
                   ),
