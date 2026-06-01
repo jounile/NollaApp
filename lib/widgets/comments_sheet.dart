@@ -5,10 +5,11 @@ import '../services/comment_service.dart';
 
 Future<int?> showCommentsSheet(
   BuildContext context,
-  int mediaId,
+  int contentId,
   int currentCount,
   String authToken, {
   String? currentUsername,
+  CommentContentType contentType = CommentContentType.media,
 }) {
   return showModalBottomSheet<int>(
     context: context,
@@ -18,25 +19,28 @@ Future<int?> showCommentsSheet(
       borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
     ),
     builder: (_) => _CommentsSheet(
-      mediaId: mediaId,
+      contentId: contentId,
       currentCount: currentCount,
       authToken: authToken,
       currentUsername: currentUsername,
+      contentType: contentType,
     ),
   );
 }
 
 class _CommentsSheet extends StatefulWidget {
-  final int mediaId;
+  final int contentId;
   final int currentCount;
   final String authToken;
   final String? currentUsername;
+  final CommentContentType contentType;
 
   const _CommentsSheet({
-    required this.mediaId,
+    required this.contentId,
     required this.currentCount,
     required this.authToken,
     this.currentUsername,
+    this.contentType = CommentContentType.media,
   });
 
   @override
@@ -71,7 +75,7 @@ class _CommentsSheetState extends State<_CommentsSheet> {
       _loading = true;
       _error = null;
     });
-    final result = await CommentService.fetchComments(widget.mediaId, widget.authToken);
+    final result = await CommentService.fetchComments(widget.contentId, widget.authToken, type: widget.contentType);
     if (!mounted) return;
     setState(() {
       _loading = false;
@@ -88,7 +92,7 @@ class _CommentsSheetState extends State<_CommentsSheet> {
     final text = _textCtrl.text.trim();
     if (text.isEmpty || _sending) return;
     setState(() => _sending = true);
-    final comment = await CommentService.addComment(widget.mediaId, text, widget.authToken);
+    final comment = await CommentService.addComment(widget.contentId, text, widget.authToken, type: widget.contentType);
     if (!mounted) return;
     setState(() {
       _sending = false;

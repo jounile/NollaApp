@@ -4,6 +4,7 @@ class Comment {
   final String authorDisplayName;
   final String body;
   final String? createdAt;
+  final bool published;
 
   const Comment({
     required this.id,
@@ -11,6 +12,7 @@ class Comment {
     required this.authorDisplayName,
     required this.body,
     this.createdAt,
+    this.published = true,
   });
 
   factory Comment.fromJson(Map<String, dynamic> json) {
@@ -33,6 +35,7 @@ class Comment {
       authorDisplayName: displayName,
       body: json['body'] as String? ?? json['text'] as String? ?? json['content'] as String? ?? '',
       createdAt: json['created_at'] as String? ?? json['createdAt'] as String?,
+      published: json['published'] as bool? ?? true,
     );
   }
 }
