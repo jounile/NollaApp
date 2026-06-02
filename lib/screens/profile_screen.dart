@@ -3,12 +3,19 @@ import 'package:image_picker/image_picker.dart';
 import '../models/profile.dart';
 import '../services/app_logger.dart';
 import '../services/profile_service.dart';
+import '../services/theme_service.dart';
 
 class ProfileScreen extends StatefulWidget {
   final String username;
   final String authToken;
+  final ThemeService themeService;
 
-  const ProfileScreen({super.key, required this.username, required this.authToken});
+  const ProfileScreen({
+    super.key,
+    required this.username,
+    required this.authToken,
+    required this.themeService,
+  });
 
   @override
   State<ProfileScreen> createState() => _ProfileScreenState();
@@ -299,6 +306,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               ),
                             ],
                             const SizedBox(height: 32),
+
+                            _SectionHeader(label: 'Preferences', theme: theme),
+                            const SizedBox(height: 12),
+                            _ThemeToggle(
+                              themeService: widget.themeService,
+                              theme: theme,
+                            ),
+                            const SizedBox(height: 24),
 
                             _SectionHeader(label: 'Personal', theme: theme),
                             const SizedBox(height: 12),
@@ -695,6 +710,101 @@ class _ProfileField extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _ThemeToggle extends StatelessWidget {
+  final ThemeService themeService;
+  final ThemeData theme;
+
+  const _ThemeToggle({required this.themeService, required this.theme});
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = theme.colorScheme;
+    return Row(
+      children: [
+        for (final opt in _ThemeOption.values)
+          Expanded(
+            child: _ThemeOptionButton(
+              option: opt,
+              selected: themeService.mode == opt.mode,
+              cs: cs,
+              onTap: () => themeService.setMode(opt.mode),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+class _ThemeOption {
+  final ThemeMode mode;
+  final IconData icon;
+  final String label;
+
+  const _ThemeOption(this.mode, this.icon, this.label);
+
+  static const values = [
+    _ThemeOption(ThemeMode.system, Icons.settings_brightness, 'System'),
+    _ThemeOption(ThemeMode.light, Icons.light_mode_outlined, 'Light'),
+    _ThemeOption(ThemeMode.dark, Icons.dark_mode_outlined, 'Dark'),
+  ];
+}
+
+class _ThemeOptionButton extends StatelessWidget {
+  final _ThemeOption option;
+  final bool selected;
+  final ColorScheme cs;
+  final VoidCallback onTap;
+
+  const _ThemeOptionButton({
+    required this.option,
+    required this.selected,
+    required this.cs,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final radius = BorderRadius.circular(12);
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 4),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: radius,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          decoration: BoxDecoration(
+            color: selected ? cs.primaryContainer : cs.surfaceContainerHighest,
+            borderRadius: radius,
+            border: Border.all(
+              color: selected ? cs.primary : cs.outlineVariant,
+              width: selected ? 2 : 1,
+            ),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                option.icon,
+                color: selected ? cs.onPrimaryContainer : cs.onSurfaceVariant,
+              ),
+              const SizedBox(height: 4),
+              Text(
+                option.label,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: selected ? FontWeight.bold : FontWeight.normal,
+                  color: selected ? cs.onPrimaryContainer : cs.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

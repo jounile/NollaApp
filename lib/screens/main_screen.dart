@@ -6,12 +6,19 @@ import 'media_screen.dart';
 import 'profile_screen.dart';
 import 'login_screen.dart';
 import '../services/session_service.dart';
+import '../services/theme_service.dart';
 
 class MainScreen extends StatefulWidget {
   final String username;
   final String authToken;
+  final ThemeService? themeService;
 
-  const MainScreen({super.key, required this.username, required this.authToken});
+  const MainScreen({
+    super.key,
+    required this.username,
+    required this.authToken,
+    this.themeService,
+  });
 
   @override
   State<MainScreen> createState() => _MainScreenState();
@@ -19,6 +26,13 @@ class MainScreen extends StatefulWidget {
 
 class _MainScreenState extends State<MainScreen> {
   int _selectedIndex = 0;
+  late final ThemeService _themeService;
+
+  @override
+  void initState() {
+    super.initState();
+    _themeService = widget.themeService ?? ThemeService();
+  }
 
   late final List<Widget> _pages = [
     HomeScreen(
@@ -29,7 +43,11 @@ class _MainScreenState extends State<MainScreen> {
     FeedScreen(username: widget.username, authToken: widget.authToken),
     SpotsScreen(authToken: widget.authToken),
     MediaScreen(authToken: widget.authToken),
-    ProfileScreen(username: widget.username, authToken: widget.authToken),
+    ProfileScreen(
+      username: widget.username,
+      authToken: widget.authToken,
+      themeService: _themeService,
+    ),
   ];
 
   void _onItemTapped(int index) {
