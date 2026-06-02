@@ -19,6 +19,8 @@ class FeedScreen extends StatefulWidget {
   State<FeedScreen> createState() => _FeedScreenState();
 }
 
+enum _FilterMode { all, photo, video }
+
 class _FeedScreenState extends State<FeedScreen> {
   final List<MediaItem> _items = [];
   final Set<int> _likingIds = {};
@@ -28,7 +30,7 @@ class _FeedScreenState extends State<FeedScreen> {
   bool _hasMore = false;
   int _page = 1;
   String? _error;
-  int? _selectedMediatypeId;
+  _FilterMode _filterMode = _FilterMode.all;
   int? _serverTotal;
 
   @override
@@ -82,37 +84,24 @@ class _FeedScreenState extends State<FeedScreen> {
     });
   }
 
-  // -1 is a sentinel for the "Other" filter
-  static const int _otherFilterId = -1;
-  static const Set<int> _primaryMediatypeIds = {1, 6};
-
   List<MediaItem> get _filteredItems {
-    if (_selectedMediatypeId == null) return _items;
-    if (_selectedMediatypeId == _otherFilterId) {
-      return _items.where((e) => e.mediatypeId == null || !_primaryMediatypeIds.contains(e.mediatypeId)).toList();
+    switch (_filterMode) {
+      case _FilterMode.all:
+        return _items;
+      case _FilterMode.photo:
+        return _items.where((e) => e.mediaType == 'photo').toList();
+      case _FilterMode.video:
+        return _items.where((e) => e.mediaType == 'video').toList();
     }
-    return _items.where((e) => e.mediatypeId == _selectedMediatypeId).toList();
   }
 
-  List<int> get _availableMediatypeIds {
-    final ids = _items.map((e) => e.mediatypeId).whereType<int>().toSet().toList()..sort();
-    return ids;
-  }
+  bool get _hasPhotoItems => _items.any((e) => e.mediaType == 'photo');
 
-  bool get _hasOtherItems => _items.any((e) => e.mediatypeId == null || !_primaryMediatypeIds.contains(e.mediatypeId));
+  bool get _hasVideoItems => _items.any((e) => e.mediaType == 'video');
 
-  int get _displayCount => _selectedMediatypeId == null
+  int get _displayCount => _filterMode == _FilterMode.all
       ? _serverTotal ?? _items.length
       : _filteredItems.length;
-
-  String _mediatypeLabel(int id) {
-    switch (id) {
-      case 1: return 'Photos';
-      case 5: return 'Video';
-      case 6: return 'Video';
-      default: return 'Type $id';
-    }
-  }
 
   Future<void> _loadMore() async {
     if (_isFetchingMore || !_hasMore) return;
@@ -207,32 +196,36 @@ class _FeedScreenState extends State<FeedScreen> {
                         Padding(
                           padding: const EdgeInsets.only(right: 8),
                           child: FilterChip(
+                            avatar: const Icon(Icons.apps, size: 18),
                             label: const Text('All'),
-                            selected: _selectedMediatypeId == null,
-                            onSelected: (_) => setState(() => _selectedMediatypeId = null),
+                            selected: _filterMode == _FilterMode.all,
+                            onSelected: (_) => setState(() => _filterMode = _FilterMode.all),
                           ),
                         ),
-                        ..._availableMediatypeIds.map((id) => Padding(
-                              padding: const EdgeInsets.only(right: 8),
-                              child: FilterChip(
-                                label: Text(_mediatypeLabel(id)),
-                                selected: _selectedMediatypeId == id,
-                                onSelected: (_) => setState(() => _selectedMediatypeId = id),
-                              ),
-                            )),
-                        if (_hasOtherItems)
+                        if (_hasPhotoItems)
                           Padding(
                             padding: const EdgeInsets.only(right: 8),
                             child: FilterChip(
-                              label: const Text('Other'),
-                              selected: _selectedMediatypeId == _otherFilterId,
-                              onSelected: (_) => setState(() => _selectedMediatypeId = _otherFilterId),
+                              avatar: const Icon(Icons.photo, size: 18),
+                              label: const Text('Photo'),
+                              selected: _filterMode == _FilterMode.photo,
+                              onSelected: (_) => setState(() => _filterMode = _FilterMode.photo),
+                            ),
+                          ),
+                        if (_hasVideoItems)
+                          Padding(
+                            padding: const EdgeInsets.only(right: 8),
+                            child: FilterChip(
+                              avatar: const Icon(Icons.videocam, size: 18),
+                              label: const Text('Video'),
+                              selected: _filterMode == _FilterMode.video,
+                              onSelected: (_) => setState(() => _filterMode = _FilterMode.video),
                             ),
                           ),
                       ],
                     ),
                   ),
-                  if (_selectedMediatypeId == null)
+                  if (_filterMode == _FilterMode.all)
                     Padding(
                       padding: const EdgeInsets.only(right: 12),
                       child: Text(
@@ -403,26 +396,71 @@ class _MediaCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (displayUrl.isNotEmpty)
+          if (displayUrl.isNotEmpty || item.mediaType == 'video')
             GestureDetector(
               onTap: () => _openMediaView(context, item, authToken),
               child: AspectRatio(
                 aspectRatio: 16 / 9,
-                child: Image.network(
-                  displayUrl,
-                  fit: BoxFit.cover,
-                  filterQuality: FilterQuality.medium,
-                  loadingBuilder: (ctx, child, progress) => progress == null
-                      ? child
-                      : Container(
+                child: item.mediaType == 'video'
+                    ? Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          if (item.thumbnailUrl != null && item.thumbnailUrl!.isNotEmpty)
+                            Image.network(
+                              item.thumbnailUrl!,
+                              fit: BoxFit.cover,
+                              filterQuality: FilterQuality.medium,
+                              loadingBuilder: (ctx, child, progress) => progress == null
+                                  ? child
+                                  : Container(
+                                      color: theme.colorScheme.surfaceContainerHighest,
+                                      child: const Center(child: CircularProgressIndicator()),
+                                    ),
+                              errorBuilder: (_, __, ___) => Container(
+                                color: theme.colorScheme.surfaceContainerHighest,
+                                child: Center(
+                                  child: Icon(Icons.videocam_outlined,
+                                      size: 40, color: theme.colorScheme.onSurfaceVariant),
+                                ),
+                              ),
+                            )
+                          else
+                            Container(
+                              color: theme.colorScheme.surfaceContainerHighest,
+                              child: Center(
+                                child: Icon(Icons.videocam_outlined,
+                                    size: 40, color: theme.colorScheme.onSurfaceVariant),
+                              ),
+                            ),
+                          Positioned.fill(
+                            child: Center(
+                              child: Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: Colors.black45,
+                                  borderRadius: BorderRadius.circular(24),
+                                ),
+                                child: const Icon(Icons.play_arrow, size: 32, color: Colors.white),
+                              ),
+                            ),
+                          ),
+                        ],
+                      )
+                    : Image.network(
+                        displayUrl,
+                        fit: BoxFit.cover,
+                        filterQuality: FilterQuality.medium,
+                        loadingBuilder: (ctx, child, progress) => progress == null
+                            ? child
+                            : Container(
+                                color: theme.colorScheme.surfaceContainerHighest,
+                                child: const Center(child: CircularProgressIndicator()),
+                              ),
+                        errorBuilder: (_, __, ___) => Container(
                           color: theme.colorScheme.surfaceContainerHighest,
-                          child: const Center(child: CircularProgressIndicator()),
+                          child: const Center(child: Icon(Icons.broken_image_outlined, size: 40)),
                         ),
-                  errorBuilder: (_, __, ___) => Container(
-                    color: theme.colorScheme.surfaceContainerHighest,
-                    child: const Center(child: Icon(Icons.broken_image_outlined, size: 40)),
-                  ),
-                ),
+                      ),
               ),
             ),
           Padding(
