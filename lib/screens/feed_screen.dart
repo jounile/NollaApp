@@ -196,6 +196,7 @@ class _FeedScreenState extends State<FeedScreen> {
                         Padding(
                           padding: const EdgeInsets.only(right: 8),
                           child: FilterChip(
+                            avatar: const Icon(Icons.apps, size: 18),
                             label: const Text('All'),
                             selected: _filterMode == _FilterMode.all,
                             onSelected: (_) => setState(() => _filterMode = _FilterMode.all),
@@ -205,6 +206,7 @@ class _FeedScreenState extends State<FeedScreen> {
                           Padding(
                             padding: const EdgeInsets.only(right: 8),
                             child: FilterChip(
+                              avatar: const Icon(Icons.photo, size: 18),
                               label: const Text('Photo'),
                               selected: _filterMode == _FilterMode.photo,
                               onSelected: (_) => setState(() => _filterMode = _FilterMode.photo),
@@ -214,6 +216,7 @@ class _FeedScreenState extends State<FeedScreen> {
                           Padding(
                             padding: const EdgeInsets.only(right: 8),
                             child: FilterChip(
+                              avatar: const Icon(Icons.videocam, size: 18),
                               label: const Text('Video'),
                               selected: _filterMode == _FilterMode.video,
                               onSelected: (_) => setState(() => _filterMode = _FilterMode.video),
