@@ -401,21 +401,66 @@ class _MediaCard extends StatelessWidget {
               onTap: () => _openMediaView(context, item, authToken),
               child: AspectRatio(
                 aspectRatio: 16 / 9,
-                child: Image.network(
-                  displayUrl,
-                  fit: BoxFit.cover,
-                  filterQuality: FilterQuality.medium,
-                  loadingBuilder: (ctx, child, progress) => progress == null
-                      ? child
-                      : Container(
+                child: item.mediaType == 'video'
+                    ? Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          if (item.thumbnailUrl != null && item.thumbnailUrl!.isNotEmpty)
+                            Image.network(
+                              item.thumbnailUrl!,
+                              fit: BoxFit.cover,
+                              filterQuality: FilterQuality.medium,
+                              loadingBuilder: (ctx, child, progress) => progress == null
+                                  ? child
+                                  : Container(
+                                      color: theme.colorScheme.surfaceContainerHighest,
+                                      child: const Center(child: CircularProgressIndicator()),
+                                    ),
+                              errorBuilder: (_, __, ___) => Container(
+                                color: theme.colorScheme.surfaceContainerHighest,
+                                child: Center(
+                                  child: Icon(Icons.videocam_outlined,
+                                      size: 40, color: theme.colorScheme.onSurfaceVariant),
+                                ),
+                              ),
+                            )
+                          else
+                            Container(
+                              color: theme.colorScheme.surfaceContainerHighest,
+                              child: Center(
+                                child: Icon(Icons.videocam_outlined,
+                                    size: 40, color: theme.colorScheme.onSurfaceVariant),
+                              ),
+                            ),
+                          Positioned.fill(
+                            child: Center(
+                              child: Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: Colors.black45,
+                                  borderRadius: BorderRadius.circular(24),
+                                ),
+                                child: const Icon(Icons.play_arrow, size: 32, color: Colors.white),
+                              ),
+                            ),
+                          ),
+                        ],
+                      )
+                    : Image.network(
+                        displayUrl,
+                        fit: BoxFit.cover,
+                        filterQuality: FilterQuality.medium,
+                        loadingBuilder: (ctx, child, progress) => progress == null
+                            ? child
+                            : Container(
+                                color: theme.colorScheme.surfaceContainerHighest,
+                                child: const Center(child: CircularProgressIndicator()),
+                              ),
+                        errorBuilder: (_, __, ___) => Container(
                           color: theme.colorScheme.surfaceContainerHighest,
-                          child: const Center(child: CircularProgressIndicator()),
+                          child: const Center(child: Icon(Icons.broken_image_outlined, size: 40)),
                         ),
-                  errorBuilder: (_, __, ___) => Container(
-                    color: theme.colorScheme.surfaceContainerHighest,
-                    child: const Center(child: Icon(Icons.broken_image_outlined, size: 40)),
-                  ),
-                ),
+                      ),
               ),
             ),
           Padding(
