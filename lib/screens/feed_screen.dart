@@ -89,15 +89,15 @@ class _FeedScreenState extends State<FeedScreen> {
       case _FilterMode.all:
         return _items;
       case _FilterMode.photo:
-        return _items.where((e) => e.mediatypeId == 1).toList();
+        return _items.where((e) => e.mediaType == 'photo').toList();
       case _FilterMode.video:
-        return _items.where((e) => e.mediatypeId == 6).toList();
+        return _items.where((e) => e.mediaType == 'video').toList();
     }
   }
 
-  bool get _hasPhotoItems => _items.any((e) => e.mediatypeId == 1);
+  bool get _hasPhotoItems => _items.any((e) => e.mediaType == 'photo');
 
-  bool get _hasVideoItems => _items.any((e) => e.mediatypeId == 6);
+  bool get _hasVideoItems => _items.any((e) => e.mediaType == 'video');
 
   int get _displayCount => _filterMode == _FilterMode.all
       ? _serverTotal ?? _items.length
