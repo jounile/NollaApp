@@ -396,7 +396,7 @@ class _MediaCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (displayUrl.isNotEmpty)
+          if (displayUrl.isNotEmpty || item.mediaType == 'video')
             GestureDetector(
               onTap: () => _openMediaView(context, item, authToken),
               child: AspectRatio(
