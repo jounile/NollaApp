@@ -11,13 +11,13 @@ import '../services/theme_service.dart';
 class MainScreen extends StatefulWidget {
   final String username;
   final String authToken;
-  final ThemeService themeService;
+  final ThemeService? themeService;
 
   const MainScreen({
     super.key,
     required this.username,
     required this.authToken,
-    required this.themeService,
+    this.themeService,
   });
 
   @override
@@ -26,6 +26,13 @@ class MainScreen extends StatefulWidget {
 
 class _MainScreenState extends State<MainScreen> {
   int _selectedIndex = 0;
+  late final ThemeService _themeService;
+
+  @override
+  void initState() {
+    super.initState();
+    _themeService = widget.themeService ?? ThemeService();
+  }
 
   late final List<Widget> _pages = [
     HomeScreen(
@@ -39,7 +46,7 @@ class _MainScreenState extends State<MainScreen> {
     ProfileScreen(
       username: widget.username,
       authToken: widget.authToken,
-      themeService: widget.themeService,
+      themeService: _themeService,
     ),
   ];
 
