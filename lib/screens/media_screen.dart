@@ -51,9 +51,17 @@ class _MediaScreenState extends State<MediaScreen> {
           _mediaItems.insert(0, _MediaItem(file: file, isVideo: false, fileSize: size));
         });
       }
-    } catch (_) {
+    } catch (e) {
+      AppLogger.log('[MediaScreen] _pickImage error: $e');
       if (!mounted) return;
-      _showError('Could not pick image. Please check permissions.');
+      final msg = e.toString();
+      if (msg.contains('permission') || msg.contains('Permission')) {
+        _showError('Permission denied. Please allow photo access.');
+      } else if (msg.contains('cancel') || msg.contains('Cancel') || msg.contains('abort') || msg.contains('Abort')) {
+        // User cancelled the picker — not an error
+      } else {
+        _showError('Could not pick image: ${msg.length > 80 ? msg.substring(0, 80) : msg}');
+      }
     }
   }
 
@@ -66,9 +74,17 @@ class _MediaScreenState extends State<MediaScreen> {
           _mediaItems.insert(0, _MediaItem(file: file, isVideo: true, fileSize: size));
         });
       }
-    } catch (_) {
+    } catch (e) {
+      AppLogger.log('[MediaScreen] _pickVideo error: $e');
       if (!mounted) return;
-      _showError('Could not pick video. Please check permissions.');
+      final msg = e.toString();
+      if (msg.contains('permission') || msg.contains('Permission')) {
+        _showError('Permission denied. Please allow video access.');
+      } else if (msg.contains('cancel') || msg.contains('Cancel') || msg.contains('abort') || msg.contains('Abort')) {
+        // User cancelled the picker — not an error
+      } else {
+        _showError('Could not pick video: ${msg.length > 80 ? msg.substring(0, 80) : msg}');
+      }
     }
   }
 
