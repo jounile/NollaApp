@@ -105862,6 +105862,7 @@ case 7:n=b2
 A.aY("[MediaService] Upload started: "+A.h(a5)+" ("+A.h(a6)+", "+J.bN(n)+" bytes)")
 m=A.aQ7("POST",A.cQ("https://nolla.net/api/v1/media/upload"))
 m.x.n(0,"content_type",a6)
+m.x.n(0,"media_topic",a5)
 a=m.y
 a0=n
 a1=A.aiq(A.b1O(a5,a9))
