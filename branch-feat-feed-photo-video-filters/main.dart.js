@@ -105859,7 +105859,7 @@ p=4
 s=7
 return A.D(a8.EJ(),$async$ut)
 case 7:n=b2
-A.b_("Upload started: "+A.h(a5)+" ("+A.h(a6)+", "+J.bN(n)+" bytes)")
+A.b_("[MediaService] Upload started: "+A.h(a5)+" ("+A.h(a6)+", "+J.bN(n)+" bytes)")
 m=A.aQ7("POST",A.cQ("https://nolla.net/api/v1/media/upload"))
 m.x.n(0,"content_type",a6)
 a=m.y
@@ -105884,7 +105884,7 @@ h=null
 if(i!=null&&J.nu(i)){g=J.lF(i)
 if(a0.b(g))h=A.aI(J.an(g,"blob_path"))}f=k.b===207
 a=f?"partial ":""
-A.b_("Upload "+a+"succeeded: "+A.h(a5)+" \u2192 "+A.h(h))
+A.b_("[MediaService] Upload "+a+"succeeded: "+A.h(a5)+" \u2192 "+A.h(h))
 a=f?"Partially uploaded":"Uploaded"
 a0=h
 q=new A.tn(!0,a,a0)
@@ -105895,7 +105895,7 @@ e=j==null?A.E(t.N,t.z):j
 a=A.aI(J.an(e,"message"))
 a3=a==null?A.aI(J.an(e,"status")):a
 d=a3==null?"Upload failed":a3
-A.b_("Upload failed: "+A.h(a5)+" \u2014 HTTP "+k.b+": "+A.h(d))
+A.b_("[MediaService] Upload failed: "+A.h(a5)+" \u2014 HTTP "+k.b+": "+A.h(d))
 q=new A.tn(!1,d,null)
 s=1
 break
@@ -105905,12 +105905,12 @@ break
 case 4:p=3
 a7=o
 a=A.a4(a7)
-if(a instanceof A.mV){A.b_("Upload timed out: "+A.h(a5))
+if(a instanceof A.mV){A.b_("[MediaService] Upload timed out: "+A.h(a5))
 q=B.a1F
 s=1
 break}else{c=a
 b=J.bJ(c)
-A.b_("Upload error: "+A.h(a5)+" \u2014 "+A.h(b))
+A.b_("[MediaService] Upload error: "+A.h(a5)+" \u2014 "+A.h(b))
 a=A.h(b)
 q=new A.tn(!1,"Upload failed: "+a,null)
 s=1
