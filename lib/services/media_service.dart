@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 import 'package:image_picker/image_picker.dart';
+import 'app_http_client.dart';
 import 'app_logger.dart';
 
 class UploadResult {
@@ -43,35 +44,23 @@ class MediaService {
       );
       multipart.headers['Authorization'] = 'Bearer $authToken';
 
-      final streamedResponse = await multipart.send().timeout(const Duration(minutes: 5));
-      final response = await http.Response.fromStream(streamedResponse);
-
-      // API returns 200 (all ok) or 207 (partial success); both count as success.
-      if (response.statusCode == 200 || response.statusCode == 207) {
-        final data = jsonDecode(response.body) as Map<String, dynamic>;
-        // URL comes from files[0].blob_path, not a top-level 'url' field.
-        final files = data['files'] as List<dynamic>?;
-        String? blobPath;
-        if (files != null && files.isNotEmpty) {
-          final first = files.first;
-          if (first is Map<String, dynamic>) {
-            blobPath = first['blob_path'] as String?;
-          }
-        }
-        final partial = response.statusCode == 207;
-        AppLogger.log('[MediaService] Upload ${partial ? "partial " : ""}succeeded: $fileName → $blobPath');
-        return UploadResult(
-          success: true,
-          message: partial ? 'Partially uploaded' : 'Uploaded',
-          url: blobPath,
-        );
+      // Use the shared appHttpClient — on web this is BrowserClient with
+      // withCredentials=true, which handles CORS + multipart correctly.
+      // On native it's the default IO client.
+      if (kIsWeb) {
+        final client = appHttpClient as http.Client;
+        // BrowserClient needs withCredentials for cookies/auth
+        // (already set in app_http_client_web.dart)
+        final streamedResponse =
+            await client.send(multipart).timeout(const Duration(minutes: 5));
+        final response = await http.Response.fromStream(streamedResponse);
+        return _parseResponse(response, fileName);
+      } else {
+        final streamedResponse =
+            await multipart.send().timeout(const Duration(minutes: 5));
+        final response = await http.Response.fromStream(streamedResponse);
+        return _parseResponse(response, fileName);
       }
-      final data = jsonDecode(response.body) as Map<String, dynamic>? ?? {};
-      // Log the full response so we can see which validation failed
-      AppLogger.log('[MediaService] Upload failed response: ${response.body}');
-      final message = data['message'] as String? ?? data['status'] as String? ?? 'Upload failed';
-      AppLogger.log('[MediaService] Upload failed: $fileName — HTTP ${response.statusCode}: $message');
-      return UploadResult(success: false, message: message);
     } on TimeoutException {
       AppLogger.log('[MediaService] Upload timed out: $fileName');
       return const UploadResult(
@@ -81,9 +70,6 @@ class MediaService {
     } catch (e) {
       final errorStr = e.toString();
       AppLogger.log('[MediaService] Upload error: $fileName — $errorStr');
-      // On Flutter Web, CORS preflight failures can appear as various error
-      // strings depending on the browser. Surface the real error so we can
-      // diagnose instead of showing a generic message.
       if (kIsWeb) {
         return UploadResult(
           success: false,
@@ -95,6 +81,36 @@ class MediaService {
         message: 'Network error. Please check your connection.',
       );
     }
+  }
+
+  /// Parse the server response (shared by both upload paths).
+  UploadResult _parseResponse(http.Response response, String fileName) {
+    if (response.statusCode == 200 || response.statusCode == 207) {
+      final data = jsonDecode(response.body) as Map<String, dynamic>;
+      final files = data['files'] as List<dynamic>?;
+      String? blobPath;
+      if (files != null && files.isNotEmpty) {
+        final first = files.first;
+        if (first is Map<String, dynamic>) {
+          blobPath = first['blob_path'] as String?;
+        }
+      }
+      final partial = response.statusCode == 207;
+      AppLogger.log(
+          '[MediaService] Upload ${partial ? "partial " : ""}succeeded: $fileName → $blobPath');
+      return UploadResult(
+        success: true,
+        message: partial ? 'Partially uploaded' : 'Uploaded',
+        url: blobPath,
+      );
+    }
+    final data = jsonDecode(response.body) as Map<String, dynamic>? ?? {};
+    AppLogger.log('[MediaService] Upload failed response: ${response.body}');
+    final message =
+        data['message'] as String? ?? data['status'] as String? ?? 'Upload failed';
+    AppLogger.log(
+        '[MediaService] Upload failed: $fileName — HTTP ${response.statusCode}: $message');
+    return UploadResult(success: false, message: message);
   }
 
   static String _mimeType(String fileName, bool isVideo) {
@@ -132,7 +148,8 @@ class MediaService {
         ? originalName.split('.').last.toLowerCase()
         : (isVideo ? 'mp4' : 'jpg');
     final now = DateTime.now();
-    final ts = '${now.year}${now.month.toString().padLeft(2, '0')}${now.day.toString().padLeft(2, '0')}_${now.hour.toString().padLeft(2, '0')}${now.minute.toString().padLeft(2, '0')}${now.second.toString().padLeft(2, '0')}';
+    final ts =
+        '${now.year}${now.month.toString().padLeft(2, '0')}${now.day.toString().padLeft(2, '0')}_${now.hour.toString().padLeft(2, '0')}${now.minute.toString().padLeft(2, '0')}${now.second.toString().padLeft(2, '0')}';
     return 'upload_${ts}.${ext}';
   }
 }
