@@ -39,16 +39,10 @@ class MediaService {
           contentType: MediaType.parse(_mimeType(fileName, isVideo)),
         ),
       );
+      multipart.headers['Authorization'] = 'Bearer $authToken';
 
-      // MultipartRequest.headers returns a computed copy each call, so we
-      // capture it once and then inject Authorization into that same map.
-      final headers = multipart.headers;
-      headers['Authorization'] = 'Bearer $authToken';
-      final body = await multipart.finalize().toBytes();
-
-      final response = await http
-          .post(Uri.parse(_uploadUrl), headers: headers, body: body)
-          .timeout(const Duration(minutes: 5));
+      final streamedResponse = await multipart.send().timeout(const Duration(minutes: 5));
+      final response = await http.Response.fromStream(streamedResponse);
 
       // API returns 200 (all ok) or 207 (partial success); both count as success.
       if (response.statusCode == 200 || response.statusCode == 207) {
