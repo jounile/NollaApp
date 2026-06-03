@@ -27,7 +27,7 @@ class MediaService {
 
     try {
       final bytes = await file.readAsBytes();
-      AppLogger.log('Upload started: $fileName ($contentType, ${bytes.length} bytes)');
+      AppLogger.log('[MediaService] Upload started: $fileName ($contentType, ${bytes.length} bytes)');
 
       final multipart = http.MultipartRequest('POST', Uri.parse(_uploadUrl));
       multipart.fields['content_type'] = contentType;
@@ -57,7 +57,7 @@ class MediaService {
           }
         }
         final partial = response.statusCode == 207;
-        AppLogger.log('Upload ${partial ? "partial " : ""}succeeded: $fileName → $blobPath');
+        AppLogger.log('[MediaService] Upload ${partial ? "partial " : ""}succeeded: $fileName → $blobPath');
         return UploadResult(
           success: true,
           message: partial ? 'Partially uploaded' : 'Uploaded',
@@ -66,17 +66,17 @@ class MediaService {
       }
       final data = jsonDecode(response.body) as Map<String, dynamic>? ?? {};
       final message = data['message'] as String? ?? data['status'] as String? ?? 'Upload failed';
-      AppLogger.log('Upload failed: $fileName — HTTP ${response.statusCode}: $message');
+      AppLogger.log('[MediaService] Upload failed: $fileName — HTTP ${response.statusCode}: $message');
       return UploadResult(success: false, message: message);
     } on TimeoutException {
-      AppLogger.log('Upload timed out: $fileName');
+      AppLogger.log('[MediaService] Upload timed out: $fileName');
       return const UploadResult(
         success: false,
         message: 'Upload timed out. Please try again.',
       );
     } catch (e) {
       final errorStr = e.toString();
-      AppLogger.log('Upload error: $fileName — $errorStr');
+      AppLogger.log('[MediaService] Upload error: $fileName — $errorStr');
       // On Flutter Web, CORS preflight failures can appear as various error
       // strings depending on the browser. Surface the real error so we can
       // diagnose instead of showing a generic message.
