@@ -31,6 +31,8 @@ class MediaService {
 
       final multipart = http.MultipartRequest('POST', Uri.parse(_uploadUrl));
       multipart.fields['content_type'] = contentType;
+      // media_topic is required by the DB (NOT NULL). Use filename as default.
+      multipart.fields['media_topic'] = fileName;
       multipart.files.add(
         http.MultipartFile.fromBytes(
           'files',
