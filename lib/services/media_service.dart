@@ -22,7 +22,7 @@ class MediaService {
     bool isVideo,
     String authToken,
   ) async {
-    final fileName = file.name;
+    final fileName = _generateFileName(file.name, isVideo);
     final contentType = isVideo ? 'video' : 'image';
 
     try {
@@ -122,5 +122,17 @@ class MediaService {
       default:
         return 'image/jpeg';
     }
+  }
+
+  /// Generate a readable filename. On web, image_picker gives generic names
+  /// like "scaled_image.jpg" — replace with a timestamp-based name while
+  /// preserving the original extension.
+  static String _generateFileName(String originalName, bool isVideo) {
+    final ext = originalName.contains('.')
+        ? originalName.split('.').last.toLowerCase()
+        : (isVideo ? 'mp4' : 'jpg');
+    final now = DateTime.now();
+    final ts = '${now.year}${now.month.toString().padLeft(2, '0')}${now.day.toString().padLeft(2, '0')}_${now.hour.toString().padLeft(2, '0')}${now.minute.toString().padLeft(2, '0')}${now.second.toString().padLeft(2, '0')}';
+    return 'upload_${ts}.${ext}';
   }
 }
