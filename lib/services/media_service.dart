@@ -75,27 +75,17 @@ class MediaService {
         message: 'Upload timed out. Please try again.',
       );
     } catch (e) {
-      // On Flutter Web (especially Safari), a CORS preflight failure for a
-      // POST with the Authorization header appears as "Load failed" or
-      // "XMLHttpRequest error." — the server needs:
-      //   Access-Control-Allow-Headers: Authorization, Content-Type
-      //   Access-Control-Allow-Methods: POST, OPTIONS
       final errorStr = e.toString();
-      final isCors = kIsWeb &&
-          (errorStr.contains('Load failed') ||
-              errorStr.contains('XMLHttpRequest'));
-      if (isCors) {
-        AppLogger.log(
-          'Upload error: CORS blocked — server must allow Authorization header '
-          'for $_uploadUrl (OPTIONS preflight failed)',
-        );
-        return const UploadResult(
+      AppLogger.log('Upload error: $fileName — $errorStr');
+      // On Flutter Web, CORS preflight failures can appear as various error
+      // strings depending on the browser. Surface the real error so we can
+      // diagnose instead of showing a generic message.
+      if (kIsWeb) {
+        return UploadResult(
           success: false,
-          message: 'Upload blocked by browser security policy. '
-              'Please try the mobile app or contact support.',
+          message: 'Upload failed: $errorStr',
         );
       }
-      AppLogger.log('Upload error: $fileName — $e');
       return const UploadResult(
         success: false,
         message: 'Network error. Please check your connection.',
