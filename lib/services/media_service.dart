@@ -65,6 +65,8 @@ class MediaService {
         );
       }
       final data = jsonDecode(response.body) as Map<String, dynamic>? ?? {};
+      // Log the full response so we can see which validation failed
+      AppLogger.log('[MediaService] Upload failed response: ${response.body}');
       final message = data['message'] as String? ?? data['status'] as String? ?? 'Upload failed';
       AppLogger.log('[MediaService] Upload failed: $fileName — HTTP ${response.statusCode}: $message');
       return UploadResult(success: false, message: message);
