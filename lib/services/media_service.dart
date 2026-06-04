@@ -6,6 +6,7 @@ import 'package:http_parser/http_parser.dart';
 import 'package:image_picker/image_picker.dart';
 import 'app_http_client.dart';
 import 'app_logger.dart';
+import 'media_upload_web.dart' if (dart.library.io) 'media_upload_io.dart';
 
 class UploadResult {
   final bool success;
@@ -44,16 +45,23 @@ class MediaService {
       );
       multipart.headers['Authorization'] = 'Bearer $authToken';
 
-      // Use the shared appHttpClient — on web this is BrowserClient with
-      // withCredentials=true, which handles CORS + multipart correctly.
-      // On native it's the default IO client.
+      // On web, BrowserClient.send() with MultipartRequest fails — it sends
+      // raw bytes instead of a browser FormData object. Use dart:html XHR.
       if (kIsWeb) {
-        final client = appHttpClient;
-        // BrowserClient needs withCredentials for cookies/auth
-        // (already set in app_http_client_web.dart)
-        final streamedResponse =
-            await client.send(multipart).timeout(const Duration(minutes: 5));
-        final response = await http.Response.fromStream(streamedResponse);
+        final result = await uploadMultipartWeb(
+          url: _uploadUrl,
+          fileName: fileName,
+          fileBytes: bytes,
+          fileFieldName: 'files',
+          mimeType: _mimeType(fileName, isVideo),
+          fields: {
+            'content_type': contentType,
+            'media_topic': fileName,
+          },
+          headers: {'Authorization': 'Bearer $authToken'},
+          timeout: const Duration(minutes: 5),
+        ).timeout(const Duration(minutes: 5));
+        final response = http.Response(result.body, result.statusCode);
         return _parseResponse(response, fileName);
       } else {
         final streamedResponse =
