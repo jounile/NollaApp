@@ -1,3 +1,5 @@
+import '../utils/media_url.dart';
+
 class Profile {
   final String username;
   final String displayName;
@@ -46,7 +48,7 @@ class Profile {
       bio: (json['info'] ?? json['bio'] ?? json['description'] ?? '').toString(),
       email: (json['email'] ?? '').toString(),
       website: (json['homepage'] ?? json['website'] ?? json['url'] ?? '').toString(),
-      avatarUrl: _nullableString(json['avatar'] ?? json['avatar_url'] ?? json['avatarUrl']),
+      avatarUrl: resolveMediaUrl(_nullableString(json['avatar'] ?? json['avatar_url'] ?? json['avatarUrl'])),
       followerCount: (json['follower_count'] as num?)?.toInt() ??
           (json['followers_count'] as num?)?.toInt() ??
           (json['followers'] as num?)?.toInt() ??
