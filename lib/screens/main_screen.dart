@@ -27,7 +27,6 @@ class MainScreen extends StatefulWidget {
 class _MainScreenState extends State<MainScreen> {
   int _selectedIndex = 0;
   late final ThemeService _themeService;
-
   @override
   void initState() {
     super.initState();
@@ -42,7 +41,7 @@ class _MainScreenState extends State<MainScreen> {
     ),
     FeedScreen(username: widget.username, authToken: widget.authToken),
     SpotsScreen(authToken: widget.authToken),
-    MediaScreen(authToken: widget.authToken),
+    MediaScreen(authToken: widget.authToken, username: widget.username),
     ProfileScreen(
       username: widget.username,
       authToken: widget.authToken,

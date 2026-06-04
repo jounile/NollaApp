@@ -211,6 +211,21 @@ class ProfileService {
     }
   }
 
+  static Future<bool> deleteMedia(int mediaId, String authToken) async {
+    try {
+      final uri = Uri.parse('https://nolla.net/api/v1/media/$mediaId');
+      AppLogger.log('[ProfileService] DELETE $uri');
+      final response = await appHttpClient
+          .delete(uri, headers: _headers(authToken))
+          .timeout(const Duration(seconds: 10));
+      AppLogger.log('[ProfileService] deleteMedia status=${response.statusCode}');
+      return response.statusCode == 200 || response.statusCode == 204;
+    } catch (e) {
+      AppLogger.log('[ProfileService] deleteMedia exception: $e');
+      return false;
+    }
+  }
+
   static Future<List<MediaItem>> fetchUserMedia(String username, String authToken) async {
     try {
       final uri = Uri.parse('https://nolla.net/api/v1/users/$username/media');

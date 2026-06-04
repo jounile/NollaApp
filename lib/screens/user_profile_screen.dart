@@ -104,6 +104,42 @@ class _UserProfileScreenState extends State<UserProfileScreen> with SingleTicker
     }
   }
 
+  Future<void> _deleteMedia(int index) async {
+    final item = _media[index];
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete this photo?'),
+        content: const Text('This action cannot be undone.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: TextButton.styleFrom(foregroundColor: Theme.of(context).colorScheme.error),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    final success = await ProfileService.deleteMedia(item.id, widget.authToken);
+    if (!mounted) return;
+    if (success) {
+      setState(() => _media.removeAt(index));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Photo deleted')),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Failed to delete photo')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -147,7 +183,12 @@ class _UserProfileScreenState extends State<UserProfileScreen> with SingleTicker
                             theme: theme,
                             authToken: widget.authToken,
                           ),
-                          _MediaGrid(media: _media, theme: theme),
+                          _MediaGrid(
+                            media: _media,
+                            theme: theme,
+                            isOwnProfile: _isOwnProfile,
+                            onDelete: _deleteMedia,
+                          ),
                         ],
                       ),
                     ),
@@ -291,8 +332,15 @@ class _SpotsList extends StatelessWidget {
 class _MediaGrid extends StatelessWidget {
   final List<MediaItem> media;
   final ThemeData theme;
+  final bool isOwnProfile;
+  final Future<void> Function(int index)? onDelete;
 
-  const _MediaGrid({required this.media, required this.theme});
+  const _MediaGrid({
+    required this.media,
+    required this.theme,
+    required this.isOwnProfile,
+    this.onDelete,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -310,27 +358,32 @@ class _MediaGrid extends StatelessWidget {
       itemBuilder: (_, i) {
         final item = media[i];
         final url = item.thumbnailUrl ?? item.url;
-        return Stack(
-          fit: StackFit.expand,
-          children: [
-            if (url.isNotEmpty)
-              Image.network(
-                url,
-                fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => Container(
-                  color: theme.colorScheme.surfaceContainerHighest,
-                  child: const Icon(Icons.broken_image_outlined),
+        return GestureDetector(
+          onLongPress: isOwnProfile && onDelete != null
+              ? () => onDelete!(i)
+              : null,
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              if (url.isNotEmpty)
+                Image.network(
+                  url,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => Container(
+                    color: theme.colorScheme.surfaceContainerHighest,
+                    child: const Icon(Icons.broken_image_outlined),
+                  ),
+                )
+              else
+                Container(color: theme.colorScheme.surfaceContainerHighest),
+              if (item.mediaType == 'video')
+                const Positioned(
+                  right: 4,
+                  bottom: 4,
+                  child: Icon(Icons.videocam, size: 16, color: Colors.white),
                 ),
-              )
-            else
-              Container(color: theme.colorScheme.surfaceContainerHighest),
-            if (item.mediaType == 'video')
-              const Positioned(
-                right: 4,
-                bottom: 4,
-                child: Icon(Icons.videocam, size: 16, color: Colors.white),
-              ),
-          ],
+            ],
+          ),
         );
       },
     );

@@ -1,3 +1,5 @@
+import '../utils/media_url.dart';
+
 class Article {
   final int id;
   final String title;
@@ -33,11 +35,12 @@ class Article {
     }
 
     // Image URL: try multiple common field names
-    final imageUrl = json['image_url'] as String? ??
+    final rawImageUrl = json['image_url'] as String? ??
         json['imageUrl'] as String? ??
         json['cover_image'] as String? ??
         json['featured_image'] as String? ??
         json['thumbnail'] as String?;
+    final imageUrl = resolveMediaUrl(rawImageUrl);
 
     return Article(
       id: (json['id'] as num?)?.toInt() ?? 0,

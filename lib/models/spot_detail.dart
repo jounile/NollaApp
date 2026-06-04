@@ -1,3 +1,5 @@
+import '../utils/media_url.dart';
+
 class SpotDetail {
   final int id;
   final String name;
@@ -48,10 +50,14 @@ class SpotDetail {
     if (rawMedia is List) {
       for (final m in rawMedia) {
         if (m is String) {
-          mediaUrls.add(m);
+          final resolved = resolveMediaUrl(m);
+          if (resolved != null) mediaUrls.add(resolved);
         } else if (m is Map<String, dynamic>) {
           final url = m['url'] ?? m['src'] ?? m['image_url'];
-          if (url is String) mediaUrls.add(url);
+          if (url is String) {
+            final resolved = resolveMediaUrl(url);
+            if (resolved != null) mediaUrls.add(resolved);
+          }
         }
       }
     }

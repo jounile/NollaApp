@@ -1,3 +1,5 @@
+import '../utils/media_url.dart';
+
 class PublicProfile {
   final String username;
   final String displayName;
@@ -42,7 +44,7 @@ class PublicProfile {
           json['username'] as String? ??
           '',
       bio: json['bio'] as String?,
-      avatarUrl: json['avatar_url'] as String? ?? json['avatarUrl'] as String?,
+      avatarUrl: resolveMediaUrl(json['avatar_url'] as String? ?? json['avatarUrl'] as String?),
       spotCount: (json['spot_count'] as num?)?.toInt() ?? (json['spots_count'] as num?)?.toInt() ?? 0,
       mediaCount: (json['media_count'] as num?)?.toInt() ?? (json['photos_count'] as num?)?.toInt() ?? 0,
       followerCount: (json['follower_count'] as num?)?.toInt() ??

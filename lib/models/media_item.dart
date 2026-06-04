@@ -1,3 +1,5 @@
+import '../utils/media_url.dart';
+
 class MediaItem {
   final int id;
   final String url;
@@ -31,16 +33,40 @@ class MediaItem {
     this.createdAt,
   });
 
+  /// Full-size URL derived from the resolved thumbnailUrl.
+  /// Swaps "photos-thumbs/" → "photos/" so we address the 400px version
+  /// served by the same /media/ proxy. Falls back to ID-based guess for
+  /// items without a thumbnailUrl (e.g. legacy data).
+  String get _photoUrlFromThumb {
+    if (thumbnailUrl != null &&
+        thumbnailUrl!.contains('photos-thumbs/')) {
+      return thumbnailUrl!.replaceFirst('photos-thumbs/', 'photos/');
+    }
+    return 'https://nolla.net/media/photos/${id}_400.jpg';
+  }
+
   String get viewUrl {
     if (id == 0) return thumbnailUrl ?? url;
-    if (mediaType == 'video') return 'https://nolla.net/media/mp4/$id.mp4';
-    return 'https://nolla.net/media/photos/${id}_400.jpg';
+    if (mediaType == 'video') {
+      // Derive video URL from blob-path-based thumbnail if available.
+      if (thumbnailUrl != null && thumbnailUrl!.contains('mp4-thumbs/')) {
+        final stem = thumbnailUrl!
+            .split('mp4-thumbs/')
+            .last
+            .replaceFirst(RegExp(r'\.jpg$'), '');
+        return 'https://nolla.net/media/mp4/$stem.mp4';
+      }
+      return 'https://nolla.net/media/mp4/$id.mp4';
+    }
+    return _photoUrlFromThumb;
   }
 
   String get feedUrl {
     if (id == 0) return thumbnailUrl ?? url;
     if (mediaType == 'video') return thumbnailUrl ?? url;
-    return 'https://nolla.net/media/photos/${id}_400.jpg';
+    // Use resolved thumbnail for feed (100px), fall back to ID-based.
+    if (thumbnailUrl != null) return thumbnailUrl!;
+    return 'https://nolla.net/media/photos-thumbs/${id}_100.jpg';
   }
 
   MediaItem copyWith({bool? isLikedByMe, int? likeCount, int? commentCount}) => MediaItem(
@@ -88,7 +114,8 @@ class MediaItem {
       spotName = json['spot_name'] as String?;
     }
 
-    final url = json['url'] as String? ?? json['file_url'] as String? ?? '';
+    final rawUrl = json['url'] as String? ?? json['file_url'] as String? ?? '';
+    final url = resolveMediaUrl(rawUrl) ?? '';
 
     // mediatype_id is authoritative (1=photo, 5/6=video); fall back to string type, then URL extension.
     final rawMediatypeId = (json['mediatype_id'] as num?)?.toInt();
@@ -104,10 +131,11 @@ class MediaItem {
     // Only auto-generate a URL when the field is completely absent from the response.
     final hasThumbnailKey = json.containsKey('thumbnail_url');
     final apiThumbnail = hasThumbnailKey ? json['thumbnail_url'] as String? : null;
-    final resolvedThumbnail = hasThumbnailKey
+    final rawResolvedThumbnail = hasThumbnailKey
         ? apiThumbnail // trust the API (null means no thumbnail)
         : json['thumbnail'] as String? ?? // legacy: try 'thumbnail' key
             (id != 0 ? 'https://nolla.net/media/$thumbDir/${id}_100.jpg' : null);
+    final resolvedThumbnail = resolveMediaUrl(rawResolvedThumbnail);
 
     return MediaItem(
       id: id,
