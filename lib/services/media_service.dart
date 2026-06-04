@@ -48,7 +48,7 @@ class MediaService {
       // withCredentials=true, which handles CORS + multipart correctly.
       // On native it's the default IO client.
       if (kIsWeb) {
-        final client = appHttpClient as http.Client;
+        final client = appHttpClient;
         // BrowserClient needs withCredentials for cookies/auth
         // (already set in app_http_client_web.dart)
         final streamedResponse =
@@ -150,6 +150,6 @@ class MediaService {
     final now = DateTime.now();
     final ts =
         '${now.year}${now.month.toString().padLeft(2, '0')}${now.day.toString().padLeft(2, '0')}_${now.hour.toString().padLeft(2, '0')}${now.minute.toString().padLeft(2, '0')}${now.second.toString().padLeft(2, '0')}';
-    return 'upload_${ts}.${ext}';
+    return 'upload_$ts.$ext';
   }
 }
