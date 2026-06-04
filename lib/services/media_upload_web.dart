@@ -1,3 +1,6 @@
+// dart:html is web-only by design — this file is only imported on web builds.
+// ignore_for_file: avoid_web_libraries_in_flutter
+import 'dart:async';
 import 'dart:html';
 import 'dart:typed_data';
 
@@ -31,7 +34,7 @@ Future<WebUploadResponse> uploadMultipartWeb({
 
   // Add form fields
   for (final entry in fields.entries) {
-    formData.appendString(entry.key, entry.value);
+    formData.append(entry.key, entry.value);
   }
 
   final xhr = HttpRequest();
