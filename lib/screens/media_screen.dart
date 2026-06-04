@@ -139,9 +139,17 @@ class _MediaScreenState extends State<MediaScreen> {
 
     if (mounted) setState(() => _isUploading = false);
 
-    // Refresh existing media after uploads complete
+    // Refresh existing media after uploads complete;
+    // remove successfully-uploaded pending items so the grid doesn't
+    // show duplicates (local thumb + server entry side-by-side).
     if (pending.any((i) => i.uploadStatus == UploadStatus.uploaded)) {
       await _loadExistingMedia();
+      if (mounted) {
+        setState(() {
+          _pendingItems.removeWhere(
+              (i) => i.uploadStatus == UploadStatus.uploaded);
+        });
+      }
     }
   }
 
@@ -332,7 +340,7 @@ class _MediaScreenState extends State<MediaScreen> {
                             url: url,
                             isVideo: item.mediaType == 'video',
                             onLongPress: () => _deleteExistingMedia(index),
-                            theme: theme,
+                            onRefresh: _loadExistingMedia,
                           );
                         }
                         // Pending upload items
@@ -359,40 +367,66 @@ class _MediaScreenState extends State<MediaScreen> {
   }
 }
 
-class _ExistingMediaTile extends StatelessWidget {
+class _ExistingMediaTile extends StatefulWidget {
   final String url;
   final bool isVideo;
   final VoidCallback onLongPress;
-  final ThemeData theme;
+  final VoidCallback? onRefresh;
 
   const _ExistingMediaTile({
     required this.url,
     required this.isVideo,
     required this.onLongPress,
-    required this.theme,
+    this.onRefresh,
   });
 
   @override
+  State<_ExistingMediaTile> createState() => _ExistingMediaTileState();
+}
+
+class _ExistingMediaTileState extends State<_ExistingMediaTile> {
+  int _retryCount = 0;
+
+  void _onImageError() {
+    // Thumbnail may still be generating — retry a few times with a delay.
+    if (_retryCount < 3) {
+      _retryCount++;
+      Future.delayed(Duration(seconds: _retryCount * 2), () {
+        if (mounted) setState(() {});
+      });
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return GestureDetector(
-      onLongPress: onLongPress,
+      onLongPress: widget.onLongPress,
       child: Stack(
         fit: StackFit.expand,
         children: [
           ClipRRect(
             borderRadius: BorderRadius.circular(4),
-            child: url.isNotEmpty
+            child: widget.url.isNotEmpty
                 ? Image.network(
-                    url,
+                    widget.url,
                     fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => Container(
-                      color: theme.colorScheme.surfaceContainerHighest,
-                      child: const Icon(Icons.broken_image_outlined),
-                    ),
+                    key: ValueKey('${widget.url}_$_retryCount'),
+                    errorBuilder: (_, __, ___) {
+                      _onImageError();
+                      return Container(
+                        color: theme.colorScheme.surfaceContainerHighest,
+                        child: _retryCount < 3
+                            ? const Center(
+                                child: CircularProgressIndicator(strokeWidth: 2),
+                              )
+                            : const Icon(Icons.broken_image_outlined),
+                      );
+                    },
                   )
                 : Container(color: theme.colorScheme.surfaceContainerHighest),
           ),
-          if (isVideo)
+          if (widget.isVideo)
             const Positioned(
               bottom: 4,
               left: 4,
