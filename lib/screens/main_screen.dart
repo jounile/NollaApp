@@ -27,6 +27,7 @@ class MainScreen extends StatefulWidget {
 class _MainScreenState extends State<MainScreen> {
   int _selectedIndex = 0;
   late final ThemeService _themeService;
+  int _feedGeneration = 0;
 
   @override
   void initState() {
@@ -42,7 +43,7 @@ class _MainScreenState extends State<MainScreen> {
     ),
     FeedScreen(username: widget.username, authToken: widget.authToken),
     SpotsScreen(authToken: widget.authToken),
-    MediaScreen(authToken: widget.authToken),
+    MediaScreen(authToken: widget.authToken, username: widget.username),
     ProfileScreen(
       username: widget.username,
       authToken: widget.authToken,
@@ -55,6 +56,9 @@ class _MainScreenState extends State<MainScreen> {
       _confirmLogout();
       return;
     }
+    // Bump feed generation so FeedScreen rebuilds and fetches fresh data
+    // when the user switches back to the Feed tab.
+    if (index == 1) _feedGeneration++;
     setState(() => _selectedIndex = index);
   }
 

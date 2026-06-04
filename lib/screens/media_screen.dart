@@ -1,19 +1,21 @@
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import '../models/media_item.dart';
 import '../services/app_logger.dart';
 import '../services/media_service.dart';
+import '../services/profile_service.dart';
 
 enum UploadStatus { pending, uploading, uploaded, failed }
 
-class _MediaItem {
+class _PendingMediaItem {
   final XFile file;
   final bool isVideo;
   final int fileSize;
   UploadStatus uploadStatus;
   String? uploadedUrl;
 
-  _MediaItem({required this.file, required this.isVideo, required this.fileSize})
+  _PendingMediaItem({required this.file, required this.isVideo, required this.fileSize})
       : uploadStatus = UploadStatus.pending;
 }
 
@@ -24,8 +26,9 @@ String _formatBytes(int bytes) {
 
 class MediaScreen extends StatefulWidget {
   final String authToken;
+  final String username;
 
-  const MediaScreen({super.key, required this.authToken});
+  const MediaScreen({super.key, required this.authToken, required this.username});
 
   @override
   State<MediaScreen> createState() => _MediaScreenState();
@@ -34,8 +37,25 @@ class MediaScreen extends StatefulWidget {
 class _MediaScreenState extends State<MediaScreen> {
   final ImagePicker _picker = ImagePicker();
   final MediaService _mediaService = MediaService();
-  final List<_MediaItem> _mediaItems = [];
+  final List<_PendingMediaItem> _pendingItems = [];
+  List<MediaItem> _existingMedia = [];
   bool _isUploading = false;
+  bool _isLoadingExisting = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadExistingMedia();
+  }
+
+  Future<void> _loadExistingMedia() async {
+    final media = await ProfileService.fetchUserMedia(widget.username, widget.authToken);
+    if (!mounted) return;
+    setState(() {
+      _existingMedia = media;
+      _isLoadingExisting = false;
+    });
+  }
 
   Future<void> _pickImage(ImageSource source) async {
     try {
@@ -48,7 +68,7 @@ class _MediaScreenState extends State<MediaScreen> {
       if (file != null && mounted) {
         final size = await file.length();
         setState(() {
-          _mediaItems.insert(0, _MediaItem(file: file, isVideo: false, fileSize: size));
+          _pendingItems.insert(0, _PendingMediaItem(file: file, isVideo: false, fileSize: size));
         });
       }
     } catch (e) {
@@ -71,7 +91,7 @@ class _MediaScreenState extends State<MediaScreen> {
       if (file != null && mounted) {
         final size = await file.length();
         setState(() {
-          _mediaItems.insert(0, _MediaItem(file: file, isVideo: true, fileSize: size));
+          _pendingItems.insert(0, _PendingMediaItem(file: file, isVideo: true, fileSize: size));
         });
       }
     } catch (e) {
@@ -92,7 +112,7 @@ class _MediaScreenState extends State<MediaScreen> {
     if (_isUploading) return;
     setState(() => _isUploading = true);
 
-    final pending = _mediaItems
+    final pending = _pendingItems
         .where((i) =>
             i.uploadStatus == UploadStatus.pending ||
             i.uploadStatus == UploadStatus.failed)
@@ -118,10 +138,15 @@ class _MediaScreenState extends State<MediaScreen> {
     }
 
     if (mounted) setState(() => _isUploading = false);
+
+    // Refresh existing media after uploads complete
+    if (pending.any((i) => i.uploadStatus == UploadStatus.uploaded)) {
+      await _loadExistingMedia();
+    }
   }
 
   void _retryItem(int index) {
-    setState(() => _mediaItems[index].uploadStatus = UploadStatus.pending);
+    setState(() => _pendingItems[index].uploadStatus = UploadStatus.pending);
     _uploadAll();
   }
 
@@ -201,17 +226,55 @@ class _MediaScreenState extends State<MediaScreen> {
     );
   }
 
-  void _removeItem(int index) {
-    setState(() => _mediaItems.removeAt(index));
+  void _removePendingItem(int index) {
+    setState(() => _pendingItems.removeAt(index));
+  }
+
+  Future<void> _deleteExistingMedia(int index) async {
+    final item = _existingMedia[index];
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete this photo?'),
+        content: const Text('This action cannot be undone.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: TextButton.styleFrom(foregroundColor: Theme.of(context).colorScheme.error),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    final success = await ProfileService.deleteMedia(item.id, widget.authToken);
+    if (!mounted) return;
+    if (success) {
+      setState(() => _existingMedia.removeAt(index));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Photo deleted')),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Failed to delete photo')),
+      );
+    }
   }
 
   void _showLogs() => showLogViewer(context, filter: const ['[MediaService]']);
 
   @override
   Widget build(BuildContext context) {
-    final hasPending = _mediaItems.any((i) =>
+    final theme = Theme.of(context);
+    final hasPending = _pendingItems.any((i) =>
         i.uploadStatus == UploadStatus.pending ||
         i.uploadStatus == UploadStatus.failed);
+    final totalItems = _existingMedia.length + _pendingItems.length;
 
     return Scaffold(
       appBar: AppBar(
@@ -222,7 +285,7 @@ class _MediaScreenState extends State<MediaScreen> {
             tooltip: 'View logs',
             onPressed: _showLogs,
           ),
-          if (_mediaItems.isNotEmpty)
+          if (_pendingItems.isNotEmpty)
             _isUploading
                 ? const Padding(
                     padding: EdgeInsets.all(14),
@@ -239,28 +302,53 @@ class _MediaScreenState extends State<MediaScreen> {
                   ),
         ],
       ),
-      body: _mediaItems.isEmpty
-          ? _EmptyState(onAdd: _showPickerSheet)
-          : GridView.builder(
-              padding: const EdgeInsets.all(8),
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 3,
-                crossAxisSpacing: 4,
-                mainAxisSpacing: 4,
-              ),
-              itemCount: _mediaItems.length,
-              itemBuilder: (ctx, index) {
-                final item = _mediaItems[index];
-                return _MediaTile(
-                  item: item,
-                  onDelete: item.uploadStatus == UploadStatus.uploading
-                      ? null
-                      : () => _removeItem(index),
-                  onRetry: item.uploadStatus == UploadStatus.failed
-                      ? () => _retryItem(index)
-                      : null,
-                );
-              },
+      body: _isLoadingExisting
+          ? const Center(child: CircularProgressIndicator())
+          : RefreshIndicator(
+              onRefresh: _loadExistingMedia,
+              child: totalItems == 0
+                  ? ListView(
+                      children: [
+                        SizedBox(
+                          height: MediaQuery.of(context).size.height * 0.7,
+                          child: _EmptyState(onAdd: _showPickerSheet),
+                        ),
+                      ],
+                    )
+                  : GridView.builder(
+                      padding: const EdgeInsets.all(8),
+                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 3,
+                        crossAxisSpacing: 4,
+                        mainAxisSpacing: 4,
+                      ),
+                      itemCount: totalItems,
+                      itemBuilder: (ctx, index) {
+                        // Existing media items first
+                        if (index < _existingMedia.length) {
+                          final item = _existingMedia[index];
+                          final url = item.thumbnailUrl ?? item.url;
+                          return _ExistingMediaTile(
+                            url: url,
+                            isVideo: item.mediaType == 'video',
+                            onLongPress: () => _deleteExistingMedia(index),
+                            theme: theme,
+                          );
+                        }
+                        // Pending upload items
+                        final pendingIndex = index - _existingMedia.length;
+                        final item = _pendingItems[pendingIndex];
+                        return _PendingMediaTile(
+                          item: item,
+                          onDelete: item.uploadStatus == UploadStatus.uploading
+                              ? null
+                              : () => _removePendingItem(pendingIndex),
+                          onRetry: item.uploadStatus == UploadStatus.failed
+                              ? () => _retryItem(pendingIndex)
+                              : null,
+                        );
+                      },
+                    ),
             ),
       floatingActionButton: FloatingActionButton(
         onPressed: _showPickerSheet,
@@ -271,12 +359,70 @@ class _MediaScreenState extends State<MediaScreen> {
   }
 }
 
-class _MediaTile extends StatelessWidget {
-  final _MediaItem item;
+class _ExistingMediaTile extends StatelessWidget {
+  final String url;
+  final bool isVideo;
+  final VoidCallback onLongPress;
+  final ThemeData theme;
+
+  const _ExistingMediaTile({
+    required this.url,
+    required this.isVideo,
+    required this.onLongPress,
+    required this.theme,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onLongPress: onLongPress,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: url.isNotEmpty
+                ? Image.network(
+                    url,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => Container(
+                      color: theme.colorScheme.surfaceContainerHighest,
+                      child: const Icon(Icons.broken_image_outlined),
+                    ),
+                  )
+                : Container(color: theme.colorScheme.surfaceContainerHighest),
+          ),
+          if (isVideo)
+            const Positioned(
+              bottom: 4,
+              left: 4,
+              child: Icon(Icons.videocam, color: Colors.white, size: 16),
+            ),
+          Positioned(
+            bottom: 4,
+            right: 4,
+            child: Container(
+              width: 20,
+              height: 20,
+              decoration: const BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.green,
+              ),
+              child: const Icon(Icons.check, color: Colors.white, size: 14),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PendingMediaTile extends StatelessWidget {
+  final _PendingMediaItem item;
   final VoidCallback? onDelete;
   final VoidCallback? onRetry;
 
-  const _MediaTile({required this.item, required this.onDelete, this.onRetry});
+  const _PendingMediaTile({required this.item, required this.onDelete, this.onRetry});
 
   @override
   Widget build(BuildContext context) {
