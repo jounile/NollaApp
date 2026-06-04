@@ -33,16 +33,40 @@ class MediaItem {
     this.createdAt,
   });
 
+  /// Full-size URL derived from the resolved thumbnailUrl.
+  /// Swaps "photos-thumbs/" → "photos/" so we address the 400px version
+  /// served by the same /media/ proxy. Falls back to ID-based guess for
+  /// items without a thumbnailUrl (e.g. legacy data).
+  String get _photoUrlFromThumb {
+    if (thumbnailUrl != null &&
+        thumbnailUrl!.contains('photos-thumbs/')) {
+      return thumbnailUrl!.replaceFirst('photos-thumbs/', 'photos/');
+    }
+    return 'https://nolla.net/media/photos/${id}_400.jpg';
+  }
+
   String get viewUrl {
     if (id == 0) return thumbnailUrl ?? url;
-    if (mediaType == 'video') return 'https://nolla.net/media/mp4/$id.mp4';
-    return 'https://nolla.net/media/photos/${id}_400.jpg';
+    if (mediaType == 'video') {
+      // Derive video URL from blob-path-based thumbnail if available.
+      if (thumbnailUrl != null && thumbnailUrl!.contains('mp4-thumbs/')) {
+        final stem = thumbnailUrl!
+            .split('mp4-thumbs/')
+            .last
+            .replaceFirst(RegExp(r'\.jpg$'), '');
+        return 'https://nolla.net/media/mp4/$stem.mp4';
+      }
+      return 'https://nolla.net/media/mp4/$id.mp4';
+    }
+    return _photoUrlFromThumb;
   }
 
   String get feedUrl {
     if (id == 0) return thumbnailUrl ?? url;
     if (mediaType == 'video') return thumbnailUrl ?? url;
-    return 'https://nolla.net/media/photos/${id}_400.jpg';
+    // Use resolved thumbnail for feed (100px), fall back to ID-based.
+    if (thumbnailUrl != null) return thumbnailUrl!;
+    return 'https://nolla.net/media/photos-thumbs/${id}_100.jpg';
   }
 
   MediaItem copyWith({bool? isLikedByMe, int? likeCount, int? commentCount}) => MediaItem(
