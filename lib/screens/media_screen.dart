@@ -1,4 +1,4 @@
-import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import '../services/app_logger.dart';
@@ -46,14 +46,22 @@ class _MediaScreenState extends State<MediaScreen> {
         maxHeight: 1920,
       );
       if (file != null && mounted) {
-        final size = File(file.path).lengthSync();
+        final size = await file.length();
         setState(() {
           _mediaItems.insert(0, _MediaItem(file: file, isVideo: false, fileSize: size));
         });
       }
-    } catch (_) {
+    } catch (e) {
+      AppLogger.log('[MediaScreen] _pickImage error: $e');
       if (!mounted) return;
-      _showError('Could not pick image. Please check permissions.');
+      final msg = e.toString();
+      if (msg.contains('permission') || msg.contains('Permission')) {
+        _showError('Permission denied. Please allow photo access.');
+      } else if (msg.contains('cancel') || msg.contains('Cancel') || msg.contains('abort') || msg.contains('Abort')) {
+        // User cancelled the picker — not an error
+      } else {
+        _showError('Could not pick image: ${msg.length > 80 ? msg.substring(0, 80) : msg}');
+      }
     }
   }
 
@@ -61,14 +69,22 @@ class _MediaScreenState extends State<MediaScreen> {
     try {
       final XFile? file = await _picker.pickVideo(source: source);
       if (file != null && mounted) {
-        final size = File(file.path).lengthSync();
+        final size = await file.length();
         setState(() {
           _mediaItems.insert(0, _MediaItem(file: file, isVideo: true, fileSize: size));
         });
       }
-    } catch (_) {
+    } catch (e) {
+      AppLogger.log('[MediaScreen] _pickVideo error: $e');
       if (!mounted) return;
-      _showError('Could not pick video. Please check permissions.');
+      final msg = e.toString();
+      if (msg.contains('permission') || msg.contains('Permission')) {
+        _showError('Permission denied. Please allow video access.');
+      } else if (msg.contains('cancel') || msg.contains('Cancel') || msg.contains('abort') || msg.contains('Abort')) {
+        // User cancelled the picker — not an error
+      } else {
+        _showError('Could not pick video: ${msg.length > 80 ? msg.substring(0, 80) : msg}');
+      }
     }
   }
 
@@ -277,10 +293,7 @@ class _MediaTile extends StatelessWidget {
                         color: Colors.white, size: 40),
                   ),
                 )
-              : Image.file(
-                  File(item.file.path),
-                  fit: BoxFit.cover,
-                ),
+              : _ThumbnailImage(file: item.file),
         ),
         if (item.isVideo)
           const Positioned(
@@ -434,6 +447,43 @@ class _PickerOption extends StatelessWidget {
       leading: Icon(icon, color: theme.colorScheme.primary),
       title: Text(label),
       onTap: onTap,
+    );
+  }
+}
+
+class _ThumbnailImage extends StatefulWidget {
+  final XFile file;
+
+  const _ThumbnailImage({required this.file});
+
+  @override
+  State<_ThumbnailImage> createState() => _ThumbnailImageState();
+}
+
+class _ThumbnailImageState extends State<_ThumbnailImage> {
+  late final Future<Uint8List> _bytesFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _bytesFuture = widget.file.readAsBytes();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<Uint8List>(
+      future: _bytesFuture,
+      builder: (context, snapshot) {
+        if (snapshot.hasData) {
+          return Image.memory(
+            snapshot.data!,
+            fit: BoxFit.cover,
+          );
+        }
+        return const Center(
+          child: CircularProgressIndicator(strokeWidth: 2),
+        );
+      },
     );
   }
 }
