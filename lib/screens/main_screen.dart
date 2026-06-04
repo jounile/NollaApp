@@ -27,8 +27,6 @@ class MainScreen extends StatefulWidget {
 class _MainScreenState extends State<MainScreen> {
   int _selectedIndex = 0;
   late final ThemeService _themeService;
-  int _feedGeneration = 0;
-
   @override
   void initState() {
     super.initState();
