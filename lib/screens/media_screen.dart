@@ -278,7 +278,6 @@ class _MediaScreenState extends State<MediaScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final hasPending = _pendingItems.any((i) =>
         i.uploadStatus == UploadStatus.pending ||
         i.uploadStatus == UploadStatus.failed);
