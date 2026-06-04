@@ -54,9 +54,6 @@ class _MainScreenState extends State<MainScreen> {
       _confirmLogout();
       return;
     }
-    // Bump feed generation so FeedScreen rebuilds and fetches fresh data
-    // when the user switches back to the Feed tab.
-    if (index == 1) _feedGeneration++;
     setState(() => _selectedIndex = index);
   }
 
