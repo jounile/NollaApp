@@ -132,6 +132,8 @@ class _CreateSpotScreenState extends State<CreateSpotScreen> {
       longitude: _lon!,
       description: _descCtrl.text.trim().isEmpty ? null : _descCtrl.text.trim(),
       address: _addressCtrl.text.trim().isEmpty ? null : _addressCtrl.text.trim(),
+      countryId: 1, // Default to Finland (maa_id=1)
+      townId: 1,    // Default to Helsinki (paikkakunta_id=1, maa_id=1)
     );
     final result = await SpotService.createSpot(spot, widget.authToken);
     if (!mounted) return;
