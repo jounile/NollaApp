@@ -26,6 +26,7 @@ class SpotDetailScreen extends StatefulWidget {
 
 class _SpotDetailScreenState extends State<SpotDetailScreen> {
   SpotDetail? _spot;
+  String? _imageUrl;
   bool _isLoading = true;
   String? _error;
 
@@ -42,10 +43,18 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
     });
     final result = await SpotService.fetchSpotDetail(widget.spotId, widget.authToken);
     if (!mounted) return;
+
+    String? imageUrl;
+    if (result.success && result.spot != null) {
+      imageUrl = await SpotService.fetchSpotImage(widget.spotId, authToken: widget.authToken);
+    }
+
+    if (!mounted) return;
     setState(() {
       _isLoading = false;
       if (result.success) {
         _spot = result.spot;
+        _imageUrl = imageUrl;
       } else {
         _error = result.message ?? 'Failed to load spot';
       }
@@ -60,7 +69,12 @@ class _SpotDetailScreenState extends State<SpotDetailScreen> {
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _spot != null
-              ? _SpotDetailBody(spot: _spot!, theme: theme, authToken: widget.authToken)
+              ? _SpotDetailBody(
+                  spot: _spot!,
+                  imageUrl: _imageUrl,
+                  theme: theme,
+                  authToken: widget.authToken,
+                )
               : _FallbackBody(
                   type: widget.spotType,
                   distance: widget.spotDistance,
@@ -136,10 +150,16 @@ class _FallbackBody extends StatelessWidget {
 
 class _SpotDetailBody extends StatelessWidget {
   final SpotDetail spot;
+  final String? imageUrl;
   final ThemeData theme;
   final String authToken;
 
-  const _SpotDetailBody({required this.spot, required this.theme, required this.authToken});
+  const _SpotDetailBody({
+    required this.spot,
+    required this.imageUrl,
+    required this.theme,
+    required this.authToken,
+  });
 
   static void _openImageViewer(BuildContext context, String url, String heroTag) {
     Navigator.push<void>(
@@ -166,15 +186,15 @@ class _SpotDetailBody extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        if (spot.imageUrl != null && spot.imageUrl!.isNotEmpty) ...[
+        if (imageUrl != null && imageUrl!.isNotEmpty) ...[
           ClipRRect(
             borderRadius: BorderRadius.circular(12),
             child: GestureDetector(
-              onTap: () => _openImageViewer(context, spot.imageUrl!, 'spot-image-${spot.id}'),
+              onTap: () => _openImageViewer(context, imageUrl!, 'spot-image-${spot.id}'),
               child: Hero(
                 tag: 'spot-image-${spot.id}',
                 child: Image.network(
-                  spot.imageUrl!,
+                  imageUrl!,
                   width: double.infinity,
                   height: 200,
                   fit: BoxFit.cover,
