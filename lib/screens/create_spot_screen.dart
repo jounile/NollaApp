@@ -3,6 +3,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:geolocator/geolocator.dart';
 import '../models/new_spot.dart';
+import '../models/spot_type.dart';
 import '../services/spot_service.dart';
 import '../utils/spot_utils.dart';
 
@@ -28,15 +29,13 @@ class _CreateSpotScreenState extends State<CreateSpotScreen> {
   final _descCtrl = TextEditingController();
   final _addressCtrl = TextEditingController();
 
-  String _selectedType = 'skatepark';
+  List<SpotType> _types = [];
+  String? _selectedTypeName;
   double? _lat;
   double? _lon;
   bool _isLocating = false;
   bool _isSaving = false;
-
-  static const _types = [
-    'skatepark', 'street', 'bowl', 'rail', 'ledge', 'stairs', 'bank', 'diy', 'other',
-  ];
+  bool _isLoadingTypes = true;
 
   static const _defaultLocation = LatLng(60.1699, 24.9384);
 
@@ -49,6 +48,7 @@ class _CreateSpotScreenState extends State<CreateSpotScreen> {
     } else {
       _fetchLocation();
     }
+    _loadTypes();
   }
 
   @override
@@ -57,6 +57,18 @@ class _CreateSpotScreenState extends State<CreateSpotScreen> {
     _descCtrl.dispose();
     _addressCtrl.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadTypes() async {
+    final result = await SpotService.fetchSpotTypes(authToken: widget.authToken);
+    if (!mounted) return;
+    setState(() {
+      _isLoadingTypes = false;
+      if (result != null && result.isNotEmpty) {
+        _types = result;
+        _selectedTypeName = result.first.name;
+      }
+    });
   }
 
   Future<void> _fetchLocation() async {
@@ -106,10 +118,16 @@ class _CreateSpotScreenState extends State<CreateSpotScreen> {
       );
       return;
     }
+    if (_selectedTypeName == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please select a spot type')),
+      );
+      return;
+    }
     setState(() => _isSaving = true);
     final spot = NewSpot(
       name: _nameCtrl.text.trim(),
-      type: _selectedType,
+      type: _selectedTypeName!,
       latitude: _lat!,
       longitude: _lon!,
       description: _descCtrl.text.trim().isEmpty ? null : _descCtrl.text.trim(),
@@ -160,19 +178,30 @@ class _CreateSpotScreenState extends State<CreateSpotScreen> {
             const SizedBox(height: 16),
             Text('Type', style: theme.textTheme.labelLarge),
             const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              runSpacing: 4,
-              children: _types.map((t) {
-                final selected = t == _selectedType;
-                return ChoiceChip(
-                  avatar: Icon(spotTypeToIcon(t), size: 16),
-                  label: Text(t[0].toUpperCase() + t.substring(1)),
-                  selected: selected,
-                  onSelected: (_) => setState(() => _selectedType = t),
-                );
-              }).toList(),
-            ),
+            if (_isLoadingTypes)
+              const Center(child: Padding(
+                padding: EdgeInsets.all(16),
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ))
+            else if (_types.isEmpty)
+              Text(
+                'Could not load spot types. Check your connection and try again.',
+                style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.error),
+              )
+            else
+              Wrap(
+                spacing: 8,
+                runSpacing: 4,
+                children: _types.map((t) {
+                  final selected = t.name == _selectedTypeName;
+                  return ChoiceChip(
+                    avatar: Icon(spotTypeToIcon(t.name), size: 16),
+                    label: Text(t.name[0].toUpperCase() + t.name.substring(1)),
+                    selected: selected,
+                    onSelected: (_) => setState(() => _selectedTypeName = t.name),
+                  );
+                }).toList(),
+              ),
             const SizedBox(height: 16),
             TextFormField(
               controller: _descCtrl,

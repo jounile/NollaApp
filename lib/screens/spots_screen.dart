@@ -577,9 +577,10 @@ class _SpotsScreenState extends State<SpotsScreen> {
                             const SizedBox(width: 8),
                             Expanded(
                               child: Text(
-                                kIsWeb
-                                    ? 'CORS error — API must allow web requests'
-                                    : 'Failed to load spots',
+                                SpotService.lastErrorMessage ??
+                                    (kIsWeb
+                                        ? 'CORS error — API must allow web requests'
+                                        : 'Failed to load spots'),
                                 style: theme.textTheme.bodyMedium?.copyWith(
                                   color: theme.colorScheme.onErrorContainer,
                                 ),
