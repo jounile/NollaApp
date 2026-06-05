@@ -27,7 +27,6 @@ class SpotService {
   static const String _spotTypesUrl = 'https://nolla.net/api/v1/spot-types';
   static bool lastFetchWasMock = false;
   static String? lastErrorMessage;
-  static bool _lastTypesFetchWasMock = false;
   static List<SpotType>? _cachedTypes;
 
   /// Extract error message from a non-200 API response body.
@@ -80,7 +79,6 @@ class SpotService {
             AppLogger.log('[SpotService] skipped malformed spot type: $parseErr — data: $e');
           }
         }
-        _lastTypesFetchWasMock = false;
         _cachedTypes = List<SpotType>.unmodifiable(types);
         return _cachedTypes;
       }
@@ -92,7 +90,6 @@ class SpotService {
           ? '[SpotService] CORS error on spot-types — returning mock types'
           : '[SpotService] fetchSpotTypes exception: $e');
       if (isCors) {
-        _lastTypesFetchWasMock = true;
         _cachedTypes = List<SpotType>.unmodifiable(_mockSpotTypes);
         return _cachedTypes;
       }
@@ -296,7 +293,7 @@ class SpotService {
   }
 
   // Fallback mock types used when API is unreachable (e.g. CORS on web).
-  static final List<SpotType> _mockSpotTypes = [
+  static final List<SpotType> _mockSpotTypes = const [
     SpotType(id: 1, name: 'skatepark'),
     SpotType(id: 2, name: 'street'),
     SpotType(id: 3, name: 'bowl'),
