@@ -30815,13 +30815,15 @@ _.z=k
 _.Q=l
 _.as=m
 _.at=n},
-ajS:function ajS(a,b,c,d,e,f){var _=this
+ajS:function ajS(a,b,c,d,e,f,g,h){var _=this
 _.a=a
 _.b=b
 _.c=c
 _.d=d
 _.e=e
-_.f=f},
+_.f=f
+_.r=g
+_.w=h},
 aLa(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r){return new A.alh(p,e,c,f,q,b,g,h,n,l,k,a,m,o,j,r,d,i)},
 aRt(a0){var s,r,q,p,o,n,m,l,k,j,i,h,g,f,e,d,c=null,b=J.av(a0),a=b.h(a0,"username")
 a=J.bG(a==null?"":a)
@@ -103583,6 +103585,8 @@ A.ajS.prototype={
 f3(){var s,r=this,q=A.E(t.N,t.z)
 q.n(0,"name",r.a)
 q.n(0,"type_id",r.b)
+q.n(0,"country_id",r.r)
+q.n(0,"town_id",r.w)
 q.n(0,"latlon",A.h(r.c)+","+A.h(r.d))
 s=r.e
 if(s!=null&&s.length!==0)q.n(0,"description",s)
@@ -103717,7 +103721,7 @@ if(k.length===0)k=null
 j=B.d.cp(p.r.a.a)
 if(j.length===0)j=null
 s=3
-return A.D(A.apr(new A.ajS(o,n,m,l,k,j),p.a.c),$async$Bz)
+return A.D(A.apr(new A.ajS(o,n,m,l,k,j,1,1),p.a.c),$async$Bz)
 case 3:i=b
 if(p.c==null){s=1
 break}p.L(new A.avf(p))
