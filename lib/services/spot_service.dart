@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../models/spot.dart';
 import '../models/spot_detail.dart';
+import '../models/spot_type.dart';
 import '../models/new_spot.dart';
 import '../utils/mock_data.dart';
 import 'app_logger.dart';
@@ -23,7 +24,82 @@ class SpotDetailResult {
 
 class SpotService {
   static const String _spotsUrl = 'https://nolla.net/api/v1/spots';
+  static const String _spotTypesUrl = 'https://nolla.net/api/v1/spot-types';
   static bool lastFetchWasMock = false;
+  static String? lastErrorMessage;
+  static List<SpotType>? _cachedTypes;
+
+  /// Extract error message from a non-200 API response body.
+  static String _parseApiError(int statusCode, String body) {
+    if (body.isNotEmpty) {
+      try {
+        final json = jsonDecode(body);
+        if (json is Map<String, dynamic>) {
+          final msg = json['error'] as String?;
+          if (msg != null && msg.isNotEmpty) return msg;
+        }
+      } catch (_) {}
+    }
+    return 'Request failed ($statusCode)';
+  }
+
+  /// Fetch spot types from the API. Returns null on error.
+  /// Falls back to mock types on CORS failure (web).
+  /// Result is cached for the lifetime of the process.
+  static Future<List<SpotType>?> fetchSpotTypes({String? authToken}) async {
+    if (_cachedTypes != null) {
+      return _cachedTypes;
+    }
+    try {
+      final headers = <String, String>{'Accept': 'application/json'};
+      if (authToken != null && authToken.isNotEmpty) {
+        headers['Authorization'] = 'Bearer $authToken';
+      }
+      AppLogger.log('[SpotService] GET $_spotTypesUrl');
+      final response = await http
+          .get(Uri.parse(_spotTypesUrl), headers: headers)
+          .timeout(const Duration(seconds: 10));
+      AppLogger.log('[SpotService] spot-types status=${response.statusCode} body=${response.body}');
+      if (response.statusCode == 200) {
+        final body = jsonDecode(response.body);
+        final List<dynamic> list;
+        if (body is List) {
+          list = body;
+        } else if (body is Map<String, dynamic>) {
+          final raw = body['spot_types'] ?? body['data'] ?? body['types'] ?? body['results'];
+          list = raw is List ? raw : [];
+        } else {
+          list = [];
+        }
+        final types = <SpotType>[];
+        for (final e in list) {
+          try {
+            types.add(SpotType.fromJson(e as Map<String, dynamic>));
+          } catch (parseErr) {
+            AppLogger.log('[SpotService] skipped malformed spot type: $parseErr — data: $e');
+          }
+        }
+        _cachedTypes = List<SpotType>.unmodifiable(types);
+        return _cachedTypes;
+      }
+      AppLogger.log('[SpotService] spot-types non-200 status: ${response.statusCode}');
+      return null;
+    } catch (e) {
+      final isCors = kIsWeb && (e.toString().contains('XMLHttpRequest') || e.toString().contains('Load failed'));
+      AppLogger.log(isCors
+          ? '[SpotService] CORS error on spot-types — returning mock types'
+          : '[SpotService] fetchSpotTypes exception: $e');
+      if (isCors) {
+        _cachedTypes = List<SpotType>.unmodifiable(_mockSpotTypes);
+        return _cachedTypes;
+      }
+      return null;
+    }
+  }
+
+  static void clearTypeCache() {
+    _cachedTypes = null;
+  }
 
   // Returns null on network/API error, empty list when API succeeds but has no spots.
   static Future<List<Spot>?> fetchSpots({
@@ -91,6 +167,7 @@ class SpotService {
         return spots;
       }
       AppLogger.log('[SpotService] non-200 status: ${response.statusCode}');
+      lastErrorMessage = _parseApiError(response.statusCode, response.body);
       return null;
     } catch (e) {
       final isCors = kIsWeb && (e.toString().contains('XMLHttpRequest') || e.toString().contains('Load failed'));
@@ -127,7 +204,10 @@ class SpotService {
         }
         return SpotDetailResult(success: true, spot: SpotDetail.fromJson(raw));
       }
-      return SpotDetailResult(success: false, message: 'Failed to load spot (${response.statusCode})');
+      return SpotDetailResult(
+        success: false,
+        message: _parseApiError(response.statusCode, response.body),
+      );
     } catch (e) {
       final isCors = kIsWeb && (e.toString().contains('XMLHttpRequest') || e.toString().contains('Load failed'));
       AppLogger.log(isCors
@@ -164,7 +244,10 @@ class SpotService {
         }
         return const SpotResult(success: true);
       }
-      return SpotResult(success: false, message: 'Failed to create spot (${response.statusCode})');
+      return SpotResult(
+        success: false,
+        message: _parseApiError(response.statusCode, response.body),
+      );
     } catch (e) {
       AppLogger.log('[SpotService] createSpot exception: $e');
       return const SpotResult(success: false, message: 'Network error');
@@ -208,4 +291,17 @@ class SpotService {
       return null;
     }
   }
+
+  // Fallback mock types used when API is unreachable (e.g. CORS on web).
+  static final List<SpotType> _mockSpotTypes = const [
+    SpotType(id: 1, name: 'skatepark'),
+    SpotType(id: 2, name: 'street'),
+    SpotType(id: 3, name: 'bowl'),
+    SpotType(id: 4, name: 'rail'),
+    SpotType(id: 5, name: 'ledge'),
+    SpotType(id: 6, name: 'stairs'),
+    SpotType(id: 7, name: 'bank'),
+    SpotType(id: 8, name: 'diy'),
+    SpotType(id: 9, name: 'other'),
+  ];
 }
