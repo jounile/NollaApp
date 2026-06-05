@@ -127,11 +127,13 @@ class _CreateSpotScreenState extends State<CreateSpotScreen> {
     setState(() => _isSaving = true);
     final spot = NewSpot(
       name: _nameCtrl.text.trim(),
-      type: _selectedTypeName!,
+      typeId: _types.firstWhere((t) => t.name == _selectedTypeName).id,
       latitude: _lat!,
       longitude: _lon!,
       description: _descCtrl.text.trim().isEmpty ? null : _descCtrl.text.trim(),
       address: _addressCtrl.text.trim().isEmpty ? null : _addressCtrl.text.trim(),
+      countryId: 1, // Default to Finland (maa_id=1)
+      townId: 1,    // Default to Helsinki (paikkakunta_id=1, maa_id=1)
     );
     final result = await SpotService.createSpot(spot, widget.authToken);
     if (!mounted) return;
