@@ -10,6 +10,7 @@ class SpotDetail {
   final String? description;
   final String? address;
   final String? createdBy;
+  final String? imageUrl;
   final List<String> mediaUrls;
   final List<String> tags;
 
@@ -23,6 +24,7 @@ class SpotDetail {
     this.description,
     this.address,
     this.createdBy,
+    this.imageUrl,
     this.mediaUrls = const [],
     this.tags = const [],
   });
@@ -44,6 +46,11 @@ class SpotDetail {
         }
       }
     }
+
+    final rawImage = json['image'];
+    final imageUrl = rawImage is String && rawImage.isNotEmpty
+        ? resolveMediaUrl(rawImage)
+        : null;
 
     final rawMedia = json['media'] ?? json['images'] ?? json['photos'] ?? [];
     final mediaUrls = <String>[];
@@ -83,6 +90,7 @@ class SpotDetail {
       // API uses 'map_link' (a Google Maps URL); fall back to address
       address: json['map_link'] as String? ?? json['address'] as String?,
       createdBy: json['created_by'] as String? ?? json['createdBy'] as String? ?? json['author'] as String?,
+      imageUrl: imageUrl,
       mediaUrls: mediaUrls,
       tags: tags,
     );

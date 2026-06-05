@@ -141,11 +141,55 @@ class _SpotDetailBody extends StatelessWidget {
 
   const _SpotDetailBody({required this.spot, required this.theme, required this.authToken});
 
+  static void _openImageViewer(BuildContext context, String url, String heroTag) {
+    Navigator.push<void>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => Scaffold(
+          backgroundColor: Colors.black,
+          appBar: AppBar(backgroundColor: Colors.transparent, foregroundColor: Colors.white),
+          body: Center(
+            child: InteractiveViewer(
+              child: Hero(
+                tag: heroTag,
+                child: Image.network(url, fit: BoxFit.contain),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
+        if (spot.imageUrl != null && spot.imageUrl!.isNotEmpty) ...[
+          ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: GestureDetector(
+              onTap: () => _openImageViewer(context, spot.imageUrl!, 'spot-image-${spot.id}'),
+              child: Hero(
+                tag: 'spot-image-${spot.id}',
+                child: Image.network(
+                  spot.imageUrl!,
+                  width: double.infinity,
+                  height: 200,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => Container(
+                    width: double.infinity,
+                    height: 200,
+                    color: theme.colorScheme.surfaceContainerHighest,
+                    child: const Icon(Icons.broken_image_outlined, size: 48),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+        ],
         _TypeBadge(type: spot.type, theme: theme),
         const SizedBox(height: 16),
         if (spot.distance != null) ...[
@@ -230,32 +274,22 @@ class _SpotDetailBody extends StatelessWidget {
               itemCount: spot.mediaUrls.length,
               separatorBuilder: (_, __) => const SizedBox(width: 8),
               itemBuilder: (ctx, i) => GestureDetector(
-                onTap: () => Navigator.push<void>(
-                  ctx,
-                  MaterialPageRoute(
-                    builder: (_) => Scaffold(
-                      backgroundColor: Colors.black,
-                      appBar: AppBar(backgroundColor: Colors.transparent, foregroundColor: Colors.white),
-                      body: Center(
-                        child: InteractiveViewer(
-                          child: Image.network(spot.mediaUrls[i], fit: BoxFit.contain),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: Image.network(
-                    spot.mediaUrls[i],
-                    width: 160,
-                    height: 160,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => Container(
+                onTap: () => _openImageViewer(ctx, spot.mediaUrls[i], 'spot-media-${spot.id}-$i'),
+                child: Hero(
+                  tag: 'spot-media-${spot.id}-$i',
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: Image.network(
+                      spot.mediaUrls[i],
                       width: 160,
                       height: 160,
-                      color: theme.colorScheme.surfaceContainerHighest,
-                      child: const Icon(Icons.broken_image_outlined),
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => Container(
+                        width: 160,
+                        height: 160,
+                        color: theme.colorScheme.surfaceContainerHighest,
+                        child: const Icon(Icons.broken_image_outlined),
+                      ),
                     ),
                   ),
                 ),
