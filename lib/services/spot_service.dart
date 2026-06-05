@@ -5,7 +5,6 @@ import '../models/spot.dart';
 import '../models/spot_detail.dart';
 import '../models/spot_type.dart';
 import '../models/new_spot.dart';
-import '../utils/media_url.dart';
 import '../utils/mock_data.dart';
 import 'app_logger.dart';
 
@@ -100,38 +99,6 @@ class SpotService {
 
   static void clearTypeCache() {
     _cachedTypes = null;
-  }
-
-  /// Fetch the image URL for a specific spot from /api/v1/spot/<id>/image.
-  /// Returns null on error or if the spot has no image.
-  static Future<String?> fetchSpotImage(int spotId, {String? authToken}) async {
-    try {
-      final uri = Uri.parse('$_spotsUrl/$spotId/image');
-      final headers = <String, String>{'Accept': 'application/json'};
-      if (authToken != null && authToken.isNotEmpty) {
-        headers['Authorization'] = 'Bearer $authToken';
-      }
-      AppLogger.log('[SpotService] GET $uri');
-      final response = await http
-          .get(uri, headers: headers)
-          .timeout(const Duration(seconds: 10));
-      AppLogger.log('[SpotService] spot-image status=${response.statusCode} body=${response.body}');
-      if (response.statusCode == 200) {
-        final body = jsonDecode(response.body);
-        if (body is Map<String, dynamic>) {
-          final url = body['image_url'] as String?;
-          if (url != null && url.isNotEmpty) {
-            return resolveMediaUrl(url);
-          }
-        }
-        return null;
-      }
-      AppLogger.log('[SpotService] spot-image non-200 status: ${response.statusCode}');
-      return null;
-    } catch (e) {
-      AppLogger.log('[SpotService] fetchSpotImage exception: $e');
-      return null;
-    }
   }
 
   // Returns null on network/API error, empty list when API succeeds but has no spots.
