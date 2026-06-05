@@ -1,6 +1,6 @@
 class NewSpot {
   final String name;
-  final String type;
+  final int typeId;
   final double latitude;
   final double longitude;
   final String? description;
@@ -8,7 +8,7 @@ class NewSpot {
 
   const NewSpot({
     required this.name,
-    required this.type,
+    required this.typeId,
     required this.latitude,
     required this.longitude,
     this.description,
@@ -17,9 +17,8 @@ class NewSpot {
 
   Map<String, dynamic> toJson() => {
         'name': name,
-        'type': type,
-        'latitude': latitude,
-        'longitude': longitude,
+        'type_id': typeId,
+        'latlon': '$latitude,$longitude',
         if (description != null && description!.isNotEmpty) 'description': description,
         if (address != null && address!.isNotEmpty) 'address': address,
       };
