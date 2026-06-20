@@ -7,6 +7,7 @@ final ThemeData appLightTheme = ThemeData(
     seedColor: _seedColor,
     brightness: Brightness.light,
   ),
+  scaffoldBackgroundColor: Colors.yellow,
   useMaterial3: true,
 );
 
@@ -15,5 +16,6 @@ final ThemeData appDarkTheme = ThemeData(
     seedColor: _seedColor,
     brightness: Brightness.dark,
   ),
+  scaffoldBackgroundColor: Colors.yellow,
   useMaterial3: true,
 );
